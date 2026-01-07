@@ -64,9 +64,27 @@ class RecordingService {
   addMessage(sessionId, speaker, text) {
     const session = this.sessions.get(sessionId);
     if (session) {
+      const now = new Date();
+      const startTime = new Date(session.startTime);
+      const elapsedSeconds = Math.round((now - startTime) / 1000);
+
+      // Format elapsed time as MM:SS
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      const elapsedFormatted = `${String(minutes).padStart(2, "0")}:${String(
+        seconds
+      ).padStart(2, "0")}`;
+
       session.messages.push({
-        timestamp: new Date().toISOString(),
+        timestamp: now.toISOString(),
+        timeFormatted: now.toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+        elapsed: elapsedFormatted, // Time since call started (MM:SS)
         speaker,
+        speakerLabel: speaker === "user" ? "Заявитель" : "Диспетчер",
         text,
       });
     }
@@ -108,12 +126,49 @@ class RecordingService {
       this.conversationsDir,
       `${sessionId}.json`
     );
+
+    // Format duration as MM:SS or HH:MM:SS
+    const hours = Math.floor(session.durationSeconds / 3600);
+    const mins = Math.floor((session.durationSeconds % 3600) / 60);
+    const secs = session.durationSeconds % 60;
+    const durationFormatted =
+      hours > 0
+        ? `${hours}:${String(mins).padStart(2, "0")}:${String(secs).padStart(
+            2,
+            "0"
+          )}`
+        : `${mins}:${String(secs).padStart(2, "0")}`;
+
+    const startDate = new Date(session.startTime);
+    const endDate = new Date(session.endTime);
+
     const transcript = {
       sessionId: session.id,
+      // ISO timestamps
       startTime: session.startTime,
       endTime: session.endTime,
+      // Human-readable formats
+      dateFormatted: startDate.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
+      startTimeFormatted: startDate.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+      endTimeFormatted: endDate.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
       durationSeconds: session.durationSeconds,
-      incidentData: session.incidentData, // CAD data saved here!
+      durationFormatted: durationFormatted, // e.g., "2:35" or "1:02:15"
+      // CAD data
+      incidentData: session.incidentData,
+      // All messages with timestamps
+      messageCount: session.messages.length,
       messages: session.messages,
     };
     fs.writeFileSync(transcriptPath, JSON.stringify(transcript, null, 2));
