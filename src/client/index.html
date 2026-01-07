@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Voice Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --bg-dark: #0f172a;
+        --bg-card: #1e293b;
+        --bg-card-hover: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+        --glow: rgba(99, 102, 241, 0.4);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg-dark);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 600px;
+        width: 100%;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(
+          135deg,
+          var(--primary-light),
+          var(--primary)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      .card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px var(--glow);
+      }
+
+      .card-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .ai-caller {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .ai-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        position: relative;
+        animation: pulse-ring 2s infinite;
+      }
+
+      .ai-avatar.active {
+        animation: active-pulse 1.5s infinite;
+      }
+
+      .ai-avatar.listening {
+        animation: listening-pulse 0.5s infinite;
+        background: linear-gradient(135deg, var(--success), #059669);
+      }
+
+      .ai-avatar.processing {
+        animation: processing-spin 2s linear infinite;
+      }
+
+      @keyframes pulse-ring {
+        0% {
+          box-shadow: 0 0 0 0 var(--glow);
+        }
+        70% {
+          box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+        }
+      }
+
+      @keyframes active-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 20px var(--glow);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 0 40px var(--glow);
+        }
+      }
+
+      @keyframes listening-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+        50% {
+          transform: scale(1.08);
+          box-shadow: 0 0 50px rgba(16, 185, 129, 0.8);
+        }
+      }
+
+      @keyframes processing-spin {
+        0% {
+          box-shadow: 0 0 20px var(--warning);
+        }
+        50% {
+          box-shadow: 0 0 40px var(--warning);
+        }
+        100% {
+          box-shadow: 0 0 20px var(--warning);
+        }
+      }
+
+      .status {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      .status.active {
+        color: var(--success);
+      }
+      .status.processing {
+        color: var(--warning);
+      }
+      .status.listening {
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 0.875rem 1.75rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--glow);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, var(--danger), #dc2626);
+        color: white;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+      }
+
+      .transcript {
+        max-height: 300px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .message {
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        max-width: 85%;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        background: var(--primary);
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.ai {
+        background: var(--bg-card-hover);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+
+      .message-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.7;
+        margin-bottom: 0.25rem;
+      }
+
+      .message-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+
+      .empty-transcript {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 2rem;
+        font-style: italic;
+      }
+
+      .emotion-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+      }
+
+      .emotion-emoji {
+        font-size: 1rem;
+      }
+
+      .emotion-text {
+        opacity: 0.8;
+      }
+
+      .volume-meter {
+        width: 200px;
+        height: 8px;
+        background: var(--bg-card-hover);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+      }
+
+      .volume-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success), var(--warning));
+        width: 0%;
+        transition: width 0.05s;
+        border-radius: 4px;
+      }
+
+      .instructions {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px dashed var(--primary);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+
+      .instructions h4 {
+        color: var(--primary-light);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .instructions ol {
+        padding-left: 1.25rem;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      audio {
+        display: none;
+      }
+
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--bg-card-hover);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .history-item:hover {
+        background: var(--border);
+      }
+      .history-time {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+      .history-duration {
+        font-size: 0.8rem;
+        color: var(--primary-light);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🎙️ AI Voice Assistant</h1>
+        <p class="subtitle">
+          Голосовой помощник с автоматическим определением речи
+        </p>
+      </header>
+
+      <div class="card">
+        <div class="card-title"><span>📞</span> Голосовой звонок</div>
+        <div class="ai-caller">
+          <div class="ai-avatar" id="aiAvatar">🤖</div>
+          <div class="status" id="status">Нажмите кнопку для звонка</div>
+          <div class="volume-meter" id="volumeMeter" style="display: none">
+            <div class="volume-bar" id="volumeBar"></div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="callBtn">
+              <span>📞</span> Позвонить AI
+            </button>
+            <button class="btn btn-danger" id="hangupBtn" disabled>
+              <span>📵</span> Завершить
+            </button>
+          </div>
+        </div>
+        <div class="instructions">
+          <h4>Как пользоваться:</h4>
+          <ol>
+            <li>Нажмите "Позвонить AI" для начала сессии</li>
+            <li>Просто говорите — запись начнётся автоматически</li>
+            <li>Когда вы замолчите — AI получит сообщение и ответит</li>
+            <li>Нажмите "Завершить" для окончания разговора</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>💬</span> Транскрипция разговора</div>
+        <div class="transcript" id="transcript">
+          <div class="empty-transcript">
+            Начните разговор, чтобы увидеть транскрипцию
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>📚</span> История разговоров</div>
+        <div class="history-list" id="historyList">
+          <div class="empty-transcript">Загрузка истории...</div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="aiAudio"></audio>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+
+      // DOM Elements
+      const callBtn = document.getElementById("callBtn");
+      const hangupBtn = document.getElementById("hangupBtn");
+      const statusEl = document.getElementById("status");
+      const aiAvatar = document.getElementById("aiAvatar");
+      const transcriptEl = document.getElementById("transcript");
+      const aiAudio = document.getElementById("aiAudio");
+      const historyList = document.getElementById("historyList");
+      const volumeMeter = document.getElementById("volumeMeter");
+      const volumeBar = document.getElementById("volumeBar");
+
+      // State
+      let sessionId = null;
+      let audioContext = null;
+      let mediaStream = null;
+      let analyser = null;
+      let processor = null;
+      let audioChunks = [];
+
+      // Voice Activity Detection settings - OPTIMIZED for faster response
+      const VAD_THRESHOLD = 0.04; // Higher threshold to filter noise
+      const SILENCE_DURATION = 700; // Reduced from 1500ms for faster response
+      const MIN_SPEECH_DURATION = 400; // Minimum recording duration
+      const NOISE_FLOOR_SAMPLES = 30; // Samples to calculate noise floor
+
+      // Noise filtering state
+      let noiseFloor = 0.02; // Adaptive noise floor
+      let noiseFloorSamples = []; // Recent volume samples for noise calculation
+      let consecutiveSpeechFrames = 0; // Require multiple frames to confirm speech
+      const SPEECH_CONFIRM_FRAMES = 3; // Frames needed to confirm speech start
+
+      let isListening = false;
+      let isRecording = false;
+      let isSpeaking = false;
+      let isProcessing = false; // Block recording while processing
+      let silenceTimer = null;
+      let speechStartTime = null;
+      let isAiSpeaking = false;
+
+      // Connect to server
+      socket.on("connect", () => {
+        console.log("Connected to server");
+        loadHistory();
+      });
+
+      // Start call with AI
+      callBtn.onclick = async () => {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              sampleRate: 16000,
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              // Additional constraints for noise reduction
+              googEchoCancellation: true,
+              googAutoGainControl: true,
+              googNoiseSuppression: true,
+              googHighpassFilter: true,
+            },
+          });
+
+          socket.emit("call-ai");
+          callBtn.disabled = true;
+          updateStatus("Подключение...", "processing");
+        } catch (err) {
+          updateStatus("Ошибка: микрофон недоступен", "");
+          console.error("Microphone error:", err);
+        }
+      };
+
+      // AI call started
+      socket.on("ai-call-started", (data) => {
+        sessionId = data.sessionId;
+        callBtn.disabled = true;
+        hangupBtn.disabled = false;
+
+        transcriptEl.innerHTML = "";
+        noiseFloorSamples = []; // Reset noise floor
+        noiseFloor = 0.02;
+        startListening();
+      });
+
+      function startListening() {
+        if (!mediaStream) return;
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 16000,
+        });
+        const source = audioContext.createMediaStreamSource(mediaStream);
+
+        // Analyser for volume detection
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024; // Larger FFT for better frequency resolution
+        analyser.smoothingTimeConstant = 0.3; // Less smoothing for faster response
+        source.connect(analyser);
+
+        // Processor for recording
+        processor = audioContext.createScriptProcessor(2048, 1, 1); // Smaller buffer for lower latency
+        processor.onaudioprocess = (e) => {
+          if (isRecording) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            audioChunks.push(new Float32Array(inputData));
+          }
+        };
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+
+        isListening = true;
+        volumeMeter.style.display = "block";
+        updateStatus("🎙️ Калибровка шума...", "listening");
+        aiAvatar.classList.add("active");
+
+        // Calibrate noise floor first
+        setTimeout(() => {
+          updateStatus("🎙️ Слушаю... Говорите!", "listening");
+        }, 1000);
+
+        // Start voice activity detection loop
+        detectVoiceActivity();
+      }
+
+      function detectVoiceActivity() {
+        if (!isListening || !analyser) return;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calculate volume from speech frequency range (100Hz - 3000Hz)
+        // At 16kHz sample rate: bin = freq * fftSize / sampleRate
+        const lowBin = Math.floor((100 * 1024) / 16000); // ~6
+        const highBin = Math.floor((3000 * 1024) / 16000); // ~192
+
+        let speechEnergy = 0;
+        for (let i = lowBin; i <= highBin; i++) {
+          speechEnergy += dataArray[i];
+        }
+        speechEnergy /= highBin - lowBin + 1;
+        const volume = speechEnergy / 255;
+
+        // Update adaptive noise floor when not speaking
+        if (!isRecording && !isAiSpeaking) {
+          noiseFloorSamples.push(volume);
+          if (noiseFloorSamples.length > NOISE_FLOOR_SAMPLES) {
+            noiseFloorSamples.shift();
+          }
+          // Noise floor = average of lowest 50% of samples
+          const sorted = [...noiseFloorSamples].sort((a, b) => a - b);
+          const lowerHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
+          if (lowerHalf.length > 0) {
+            noiseFloor =
+              lowerHalf.reduce((a, b) => a + b, 0) / lowerHalf.length + 0.015;
+          }
+        }
+
+        // Dynamic threshold based on noise floor
+        const dynamicThreshold = Math.max(VAD_THRESHOLD, noiseFloor * 1.8);
+
+        // Update volume meter (show relative to threshold)
+        const meterValue = Math.min((volume / dynamicThreshold) * 50, 100);
+        volumeBar.style.width = `${meterValue}%`;
+        volumeBar.style.background =
+          volume > dynamicThreshold
+            ? "linear-gradient(90deg, var(--success), #10b981)"
+            : "linear-gradient(90deg, var(--text-secondary), var(--text-secondary))";
+
+        // Don't process while AI is speaking or processing
+        if (isAiSpeaking || isProcessing) {
+          consecutiveSpeechFrames = 0;
+          requestAnimationFrame(detectVoiceActivity);
+          return;
+        }
+
+        const isCurrentlySpeaking = volume > dynamicThreshold;
+
+        if (isCurrentlySpeaking && !isRecording) {
+          consecutiveSpeechFrames++;
+          // Require multiple consecutive frames to confirm speech (filters clicks/pops)
+          if (consecutiveSpeechFrames >= SPEECH_CONFIRM_FRAMES) {
+            startRecording();
+          }
+        } else if (!isCurrentlySpeaking && !isRecording) {
+          consecutiveSpeechFrames = 0;
+        } else if (isCurrentlySpeaking && isRecording) {
+          // Reset silence timer
+          clearTimeout(silenceTimer);
+          silenceTimer = null;
+          isSpeaking = true;
+        } else if (!isCurrentlySpeaking && isRecording && isSpeaking) {
+          // Start silence timer
+          if (!silenceTimer) {
+            silenceTimer = setTimeout(() => {
+              const duration = Date.now() - speechStartTime;
+              if (duration >= MIN_SPEECH_DURATION) {
+                stopRecordingAndSend();
+              } else {
+                // Too short, reset
+                audioChunks = [];
+                isRecording = false;
+                isSpeaking = false;
+                consecutiveSpeechFrames = 0;
+                updateStatus("🎙️ Слушаю... Говорите!", "listening");
+              }
+            }, SILENCE_DURATION);
+          }
+        }
+
+        requestAnimationFrame(detectVoiceActivity);
+      }
+
+      function startRecording() {
+        audioChunks = [];
+        isRecording = true;
+        isSpeaking = true;
+        speechStartTime = Date.now();
+        silenceTimer = null;
+
+        updateStatus("🔴 Записываю вашу речь...", "listening");
+        aiAvatar.classList.add("listening");
+        aiAvatar.classList.remove("active");
+      }
+
+      async function stopRecordingAndSend() {
+        if (!isRecording || audioChunks.length === 0) return;
+
+        isRecording = false;
+        isSpeaking = false;
+        isProcessing = true; // Block new recordings
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+        consecutiveSpeechFrames = 0;
+
+        updateStatus("⏳ Обрабатываю...", "processing");
+        aiAvatar.classList.remove("listening");
+        aiAvatar.classList.add("processing");
+
+        // Create audio buffer from chunks
+        const totalLength = audioChunks.reduce(
+          (acc, chunk) => acc + chunk.length,
+          0
+        );
+
+        if (totalLength < 1000) {
+          // Too short
+          updateStatus("🎙️ Слушаю... Говорите!", "listening");
+          aiAvatar.classList.remove("processing");
+          aiAvatar.classList.add("active");
+          return;
+        }
+
+        const audioBuffer = audioContext.createBuffer(
+          1,
+          totalLength,
+          audioContext.sampleRate
+        );
+        const channelData = audioBuffer.getChannelData(0);
+
+        let offset = 0;
+        for (const chunk of audioChunks) {
+          channelData.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        // Convert to WAV
+        const wavBlob = audioBufferToWav(audioBuffer);
+        const base64 = await blobToBase64(wavBlob);
+
+        socket.emit("audio-chunk", {
+          audioData: base64,
+          sessionId: sessionId,
+          format: "wav",
+        });
+
+        audioChunks = [];
+      }
+
+      // Convert AudioBuffer to WAV
+      function audioBufferToWav(audioBuffer) {
+        const numChannels = 1;
+        const sampleRate = audioBuffer.sampleRate;
+        const format = 1;
+        const bitDepth = 16;
+
+        const bytesPerSample = bitDepth / 8;
+        const blockAlign = numChannels * bytesPerSample;
+
+        const samples = audioBuffer.getChannelData(0);
+        const dataLength = samples.length * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataLength);
+        const view = new DataView(buffer);
+
+        writeString(view, 0, "RIFF");
+        view.setUint32(4, 36 + dataLength, true);
+        writeString(view, 8, "WAVE");
+        writeString(view, 12, "fmt ");
+        view.setUint32(16, 16, true);
+        view.setUint16(20, format, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * blockAlign, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitDepth, true);
+        writeString(view, 36, "data");
+        view.setUint32(40, dataLength, true);
+
+        let writeOffset = 44;
+        for (let i = 0; i < samples.length; i++) {
+          const sample = Math.max(-1, Math.min(1, samples[i]));
+          view.setInt16(
+            writeOffset,
+            sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+            true
+          );
+          writeOffset += 2;
+        }
+
+        return new Blob([buffer], { type: "audio/wav" });
+      }
+
+      function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
+      // AI processing status
+      socket.on("ai-processing", (data) => {
+        updateStatus(data.status, "processing");
+      });
+
+      // AI response received
+      socket.on("ai-response", (data) => {
+        isProcessing = false; // Allow recording again
+        aiAvatar.classList.remove("processing", "listening");
+
+        // Show user message with emotion
+        addMessage("user", data.text, data.emotion);
+        addMessage("ai", data.response);
+
+        // Play audio response
+        isAiSpeaking = true;
+        const audioBlob = base64ToBlob(data.audio, "audio/mp3");
+        const audioUrl = URL.createObjectURL(audioBlob);
+        aiAudio.src = audioUrl;
+        aiAudio.play();
+
+        updateStatus("🔊 AI отвечает...", "active");
+        aiAvatar.classList.add("active");
+
+        aiAudio.onended = () => {
+          isAiSpeaking = false;
+          if (isListening) {
+            updateStatus("🎙️ Слушаю... Говорите!", "listening");
+          }
+        };
+      });
+
+      // AI error
+      socket.on("ai-error", (data) => {
+        isProcessing = false; // Allow recording again
+        aiAvatar.classList.remove("processing", "listening");
+        aiAvatar.classList.add("active");
+        updateStatus("❌ " + data.error, "");
+        console.error("AI Error:", data.details);
+
+        // Continue listening after error
+        setTimeout(() => {
+          if (isListening) {
+            updateStatus("🎙️ Слушаю... Говорите!", "listening");
+          }
+        }, 2000);
+      });
+
+      // End call
+      hangupBtn.onclick = () => {
+        stopListening();
+        if (sessionId) {
+          socket.emit("end-ai-call", { sessionId });
+        }
+      };
+
+      function stopListening() {
+        isListening = false;
+        isRecording = false;
+        isSpeaking = false;
+        isProcessing = false;
+        clearTimeout(silenceTimer);
+
+        if (processor) {
+          processor.disconnect();
+          processor = null;
+        }
+        if (analyser) {
+          analyser.disconnect();
+          analyser = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          mediaStream = null;
+        }
+
+        volumeMeter.style.display = "none";
+      }
+
+      socket.on("ai-call-ended", (data) => {
+        sessionId = null;
+        callBtn.disabled = false;
+        hangupBtn.disabled = true;
+
+        aiAvatar.classList.remove("active", "processing", "listening");
+        updateStatus(
+          `✅ Разговор завершён (${data.duration}с, ${data.messageCount} сообщений)`,
+          ""
+        );
+
+        loadHistory();
+      });
+
+      // Helper functions
+      function updateStatus(text, state) {
+        statusEl.textContent = text;
+        statusEl.className = "status " + state;
+      }
+
+      function addMessage(type, text, emotion = null) {
+        const div = document.createElement("div");
+        div.className = `message ${type}`;
+
+        let emotionBadge = "";
+        if (emotion && type === "user") {
+          emotionBadge = `
+            <span class="emotion-badge">
+              <span class="emotion-emoji">${emotion.emoji}</span>
+              <span class="emotion-text">${emotion.emotion}</span>
+            </span>
+          `;
+        }
+
+        div.innerHTML = `
+          <div class="message-label">${
+            type === "user" ? "Вы" : "AI"
+          }${emotionBadge}</div>
+          <div class="message-text">${text}</div>
+        `;
+        transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+
+      async function blobToBase64(blob) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result.split(",")[1];
+            resolve(base64);
+          };
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      function base64ToBlob(base64, type) {
+        const binary = atob(base64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          array[i] = binary.charCodeAt(i);
+        }
+        return new Blob([array], { type });
+      }
+
+      async function loadHistory() {
+        try {
+          const res = await fetch("/api/conversations");
+          const conversations = await res.json();
+
+          if (conversations.length === 0) {
+            historyList.innerHTML =
+              '<div class="empty-transcript">Нет сохранённых разговоров</div>';
+            return;
+          }
+
+          historyList.innerHTML = conversations
+            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+            .slice(0, 10)
+            .map(
+              (c) => `
+              <div class="history-item" onclick="showConversation('${
+                c.sessionId
+              }')">
+                <span class="history-time">${new Date(
+                  c.startTime
+                ).toLocaleString("ru")}</span>
+                <span class="history-duration">${c.duration}с • ${
+                c.messageCount
+              } сообщ.</span>
+              </div>
+            `
+            )
+            .join("");
+        } catch (err) {
+          historyList.innerHTML =
+            '<div class="empty-transcript">Ошибка загрузки истории</div>';
+        }
+      }
+
+      async function showConversation(id) {
+        try {
+          const res = await fetch(`/api/conversations/${id}`);
+          const data = await res.json();
+
+          transcriptEl.innerHTML = "";
+          data.messages.forEach((m) => {
+            addMessage(m.speaker, m.text);
+          });
+        } catch (err) {
+          console.error("Error loading conversation:", err);
+        }
+      }
+    </script>
+  </body>
+</html>
