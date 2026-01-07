@@ -23,12 +23,14 @@ class RecordingService {
   /**
    * Start a new recording session
    * @param {string} sessionId - Unique session identifier
+   * @param {object} callerInfo - Caller metadata (IP, device, location)
    * @returns {object} Session info
    */
-  startSession(sessionId) {
+  startSession(sessionId, callerInfo = null) {
     const session = {
       id: sessionId,
       startTime: new Date().toISOString(),
+      callerInfo: callerInfo, // IP, device, geolocation
       messages: [],
       audioChunks: [],
       incidentData: null, // CAD data will be stored here
@@ -165,6 +167,8 @@ class RecordingService {
       }),
       durationSeconds: session.durationSeconds,
       durationFormatted: durationFormatted, // e.g., "2:35" or "1:02:15"
+      // Caller info (IP, device, location)
+      callerInfo: session.callerInfo,
       // CAD data
       incidentData: session.incidentData,
       // All messages with timestamps
@@ -176,15 +180,35 @@ class RecordingService {
     // Save combined audio if there are chunks
     let audioPath = null;
     if (session.audioChunks.length > 0) {
-      // Combine user audio chunks only for the recording
+      // Save user audio (WAV format)
       const userChunks = session.audioChunks
         .filter((c) => c.speaker === "user")
         .map((c) => c.data);
 
       if (userChunks.length > 0) {
-        audioPath = path.join(this.recordingsDir, `${sessionId}_user.webm`);
+        audioPath = path.join(this.recordingsDir, `${sessionId}_user.wav`);
         const combinedAudio = Buffer.concat(userChunks);
         fs.writeFileSync(audioPath, combinedAudio);
+        console.log(
+          `  User audio saved: ${audioPath} (${combinedAudio.length} bytes)`
+        );
+      }
+
+      // Save AI audio (MP3 format)
+      const aiChunks = session.audioChunks
+        .filter((c) => c.speaker === "ai")
+        .map((c) => c.data);
+
+      if (aiChunks.length > 0) {
+        const aiAudioPath = path.join(
+          this.recordingsDir,
+          `${sessionId}_ai.mp3`
+        );
+        const combinedAiAudio = Buffer.concat(aiChunks);
+        fs.writeFileSync(aiAudioPath, combinedAiAudio);
+        console.log(
+          `  AI audio saved: ${aiAudioPath} (${combinedAiAudio.length} bytes)`
+        );
       }
     }
 

@@ -61,15 +61,35 @@ io.on("connection", (socket) => {
   socket.broadcast.emit("user-joined", { id: socket.id });
 
   // Handle call to AI
-  socket.on("call-ai", async () => {
+  socket.on("call-ai", async (data = {}) => {
     const sessionId = uuidv4();
     socket.sessionId = sessionId;
 
-    // Start recording session
-    recordingService.startSession(sessionId);
+    // Get IP address from socket
+    const clientIp =
+      socket.handshake.headers["x-forwarded-for"] ||
+      socket.handshake.address ||
+      socket.request.connection.remoteAddress;
+
+    // Caller metadata
+    const callerInfo = {
+      ip: clientIp,
+      deviceInfo: data.deviceInfo || null,
+      location: data.location || null,
+      connectionTime: new Date().toISOString(),
+    };
+
+    // Start recording session with caller info
+    recordingService.startSession(sessionId, callerInfo);
 
     socket.emit("ai-call-started", { sessionId });
     console.log(`AI call started: ${sessionId}`);
+    console.log(`  IP: ${clientIp}`);
+    if (data.location && data.location.latitude) {
+      console.log(
+        `  Location: ${data.location.latitude}, ${data.location.longitude}`
+      );
+    }
   });
 
   // Handle audio from user
@@ -96,6 +116,9 @@ io.on("connection", (socket) => {
       // Save messages to transcript
       recordingService.addMessage(sessionId, "user", result.text);
       recordingService.addMessage(sessionId, "ai", result.response);
+
+      // Save AI audio response
+      recordingService.addAudioChunk(sessionId, result.audio, "ai");
 
       // Save/update CAD data
       recordingService.updateIncidentData(sessionId, result.incident);
