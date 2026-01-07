@@ -97,12 +97,12 @@ io.on("connection", (socket) => {
       recordingService.addMessage(sessionId, "user", result.text);
       recordingService.addMessage(sessionId, "ai", result.response);
 
-      // Send response audio back with emotion
+      // Send response audio back with incident analysis
       socket.emit("ai-response", {
         text: result.text,
         response: result.response,
         audio: result.audio.toString("base64"),
-        emotion: result.emotion,
+        incident: result.incident,
       });
     } catch (error) {
       console.error("Error processing audio:", error);

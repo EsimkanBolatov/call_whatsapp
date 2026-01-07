@@ -79,11 +79,42 @@ class AIService {
         this.conversationHistory.set(sessionId, [
           {
             role: "system",
-            content: `Ты - дружелюбный AI-ассистент для голосовых звонков. 
-Отвечай кратко и по существу, так как твои ответы будут озвучены.
-Используй простые предложения. Будь вежливым и полезным.
-Если не знаешь ответ - честно скажи об этом.
-Отвечай на языке пользователя (русский, казахский или английский).`,
+            content: `Роль: Интеллектуальный аналитик и помощник диспетчера экстренных служб (Co-Pilot)
+
+Ты — невидимый интеллектуальный помощник диспетчера экстренных служб полиции.
+Ты НЕ заменяешь оператора, не принимаешь юридически значимых решений.
+Твоя задача — анализировать входящие данные, формировать подсказки оператору, автоматически заполнять карточку происшествия.
+
+ОСНОВНЫЕ ФУНКЦИИ:
+
+1. АНАЛИЗ РАЗГОВОРА:
+- Кратко резюмируй суть обращения (1–2 предложения)
+- Определи: тип происшествия, срочность, угрозу жизни
+- Выдели: адрес, количество участников, оружие, приметы
+
+2. ДЕТЕКЦИЯ ЭМОЦИЙ:
+- Определяй: паника, агрессия, шок, спокойствие
+- При повышении риска — помечай как КРИТИЧЕСКИЙ
+
+3. КЛАССИФИКАЦИЯ (Smart-Triage):
+Категории: Убийство, Грабеж, ДТП, Бытовой конфликт, Мошенничество, Справочный
+Приоритет: 🔴 Критический | 🟠 Высокий | 🟡 Средний | 🟢 Низкий
+
+4. АВТОЗАПОЛНЕНИЕ КАРТОЧКИ (CAD):
+Адрес | Тип | Описание | Участники | Подозреваемый | Транспорт | Оружие | Пострадавшие
+
+ФОРМАТ ОТВЕТА (кратко, структурировано):
+📋 Резюме: [суть за 1-2 предложения]
+🚨 Категория: [тип] | Приоритет: [🔴/🟠/🟡/🟢]
+😰 Эмоции: [состояние заявителя]
+📍 Данные: [адрес, приметы, важные факты]
+💡 Рекомендация: [что уточнить / действие]
+
+ПРИНЦИПЫ:
+- Отвечай КРАТКО (будет озвучено)
+- Официальный служебный язык
+- Никогда не перегружай информацией
+- Приоритет: сохранение жизни → скорость → точность`,
           },
         ]);
       }
@@ -94,8 +125,8 @@ class AIService {
       const completion = await this.openai.chat.completions.create({
         model: process.env.AI_MODEL || "gpt-4o-mini",
         messages: history,
-        max_tokens: 150,
-        temperature: 0.7,
+        max_tokens: 300, // Increased for structured response
+        temperature: 0.3, // Lower for more consistent responses
       });
 
       const aiResponse = completion.choices[0].message.content;
@@ -140,65 +171,110 @@ class AIService {
   }
 
   /**
-   * Detect emotion from text
-   * @param {string} text - Text to analyze
-   * @returns {Promise<{emotion: string, emoji: string, confidence: number}>}
+   * Analyze incident from caller's speech
+   * @param {string} text - Caller's speech text
+   * @returns {Promise<object>} Incident analysis
    */
-  async detectEmotion(text) {
+  async analyzeIncident(text) {
     try {
       const completion = await this.openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `Analyze the emotion in the given text. Respond ONLY with a JSON object in this exact format:
-{"emotion": "название эмоции на русском", "emoji": "один подходящий эмодзи", "confidence": число от 0 до 1}
+            content: `Ты анализатор экстренных вызовов. Проанализируй текст заявителя и верни ТОЛЬКО JSON:
 
-Emotions to detect: радость, грусть, злость, страх, удивление, отвращение, нейтральность, любовь, интерес, скука, волнение, благодарность, смущение, гордость`,
+{
+  "priority": "critical|high|medium|low",
+  "priorityEmoji": "🔴|🟠|🟡|🟢",
+  "category": "убийство|грабеж|дтп|бытовой_конфликт|мошенничество|справочный|другое",
+  "categoryRu": "название на русском",
+  "emotion": "паника|агрессия|шок|страх|спокойствие",
+  "emotionEmoji": "😱|😡|😨|😰|😐",
+  "threatLevel": "высокая|средняя|низкая|нет",
+  "address": "адрес если упомянут или null",
+  "weapons": "описание оружия или null",
+  "victims": "число пострадавших или null",
+  "suspects": "описание подозреваемых или null",
+  "vehicles": "описание ТС или null",
+  "needsClarification": ["что нужно уточнить"]
+}
+
+Если данных нет - ставь null. Всегда возвращай валидный JSON.`,
           },
           { role: "user", content: text },
         ],
-        max_tokens: 50,
-        temperature: 0.3,
+        max_tokens: 300,
+        temperature: 0.2,
       });
 
       const responseText = completion.choices[0].message.content.trim();
 
       // Parse JSON response
-      const jsonMatch = responseText.match(/\{[^}]+\}/);
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          console.error("JSON parse error:", e);
+        }
       }
 
-      return { emotion: "нейтральность", emoji: "😐", confidence: 0.5 };
+      return {
+        priority: "medium",
+        priorityEmoji: "🟡",
+        category: "другое",
+        categoryRu: "Другое",
+        emotion: "спокойствие",
+        emotionEmoji: "😐",
+        threatLevel: "нет",
+        address: null,
+        weapons: null,
+        victims: null,
+        suspects: null,
+        vehicles: null,
+        needsClarification: ["Уточните суть обращения"],
+      };
     } catch (error) {
-      console.error("Emotion detection error:", error);
-      return { emotion: "нейтральность", emoji: "😐", confidence: 0 };
+      console.error("Incident analysis error:", error);
+      return {
+        priority: "medium",
+        priorityEmoji: "🟡",
+        category: "другое",
+        categoryRu: "Другое",
+        emotion: "спокойствие",
+        emotionEmoji: "😐",
+        threatLevel: "нет",
+        address: null,
+        weapons: null,
+        victims: null,
+        suspects: null,
+        vehicles: null,
+        needsClarification: [],
+      };
     }
   }
 
   /**
-   * Full pipeline: Audio -> Text -> Emotion -> AI Response -> Audio
+   * Full pipeline: Audio -> Text -> Incident Analysis -> AI Response -> Audio
    * @param {Buffer} audioBuffer - Input audio
    * @param {string} sessionId - Session ID
-   * @returns {Promise<{text: string, response: string, audio: Buffer, emotion: object}>}
+   * @returns {Promise<{text: string, response: string, audio: Buffer, incident: object}>}
    */
   async processAudio(audioBuffer, sessionId) {
     const userText = await this.speechToText(audioBuffer, sessionId);
-    console.log(`[${sessionId}] User said: ${userText}`);
+    console.log(`[${sessionId}] Заявитель: ${userText}`);
 
-    // Detect emotion in parallel with generating response
-    const [emotion, aiResponse] = await Promise.all([
-      this.detectEmotion(userText),
+    // Analyze incident in parallel with generating response
+    const [incident, aiResponse] = await Promise.all([
+      this.analyzeIncident(userText),
       this.generateResponse(userText, sessionId),
     ]);
 
     console.log(
-      `[${sessionId}] Emotion: ${emotion.emoji} ${
-        emotion.emotion
-      } (${Math.round(emotion.confidence * 100)}%)`
+      `[${sessionId}] Инцидент: ${incident.priorityEmoji} ${incident.categoryRu} | Эмоция: ${incident.emotionEmoji} ${incident.emotion}`
     );
-    console.log(`[${sessionId}] AI response: ${aiResponse}`);
+    console.log(`[${sessionId}] Рекомендация: ${aiResponse}`);
 
     const responseAudio = await this.textToSpeech(aiResponse);
 
@@ -206,7 +282,7 @@ Emotions to detect: радость, грусть, злость, страх, уд
       text: userText,
       response: aiResponse,
       audio: responseAudio,
-      emotion: emotion,
+      incident: incident,
     };
   }
 
