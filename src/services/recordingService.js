@@ -31,6 +31,7 @@ class RecordingService {
       startTime: new Date().toISOString(),
       messages: [],
       audioChunks: [],
+      incidentData: null, // CAD data will be stored here
     };
     this.sessions.set(sessionId, session);
     console.log(`Recording session started: ${sessionId}`);
@@ -72,6 +73,18 @@ class RecordingService {
   }
 
   /**
+   * Update incident/CAD data for session
+   * @param {string} sessionId
+   * @param {object} incidentData - CAD data from AI analysis
+   */
+  updateIncidentData(sessionId, incidentData) {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.incidentData = incidentData;
+    }
+  }
+
+  /**
    * End session and save all data
    * @param {string} sessionId
    * @returns {object} Saved file paths
@@ -90,7 +103,7 @@ class RecordingService {
     const end = new Date(session.endTime);
     session.durationSeconds = Math.round((end - start) / 1000);
 
-    // Save conversation transcript as JSON
+    // Save conversation transcript as JSON (including CAD data)
     const transcriptPath = path.join(
       this.conversationsDir,
       `${sessionId}.json`
@@ -100,6 +113,7 @@ class RecordingService {
       startTime: session.startTime,
       endTime: session.endTime,
       durationSeconds: session.durationSeconds,
+      incidentData: session.incidentData, // CAD data saved here!
       messages: session.messages,
     };
     fs.writeFileSync(transcriptPath, JSON.stringify(transcript, null, 2));

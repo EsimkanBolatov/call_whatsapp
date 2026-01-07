@@ -7,7 +7,9 @@ class AIService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    this.conversationHistory = new Map();
+    this.conversationHistory = new Map(); // For analyst (CAD)
+    this.dispatcherHistory = new Map(); // For dispatcher (voice)
+    this.incidentData = new Map(); // Accumulated CAD data per session
   }
 
   /**
@@ -149,6 +151,97 @@ class AIService {
   }
 
   /**
+   * Generate dispatcher response (voice) - talks like a real 911 operator
+   * @param {string} userMessage - Caller's message
+   * @param {string} sessionId - Session identifier
+   * @param {object} incidentContext - Current incident data for context
+   * @returns {Promise<string>} Dispatcher response text
+   */
+  async generateDispatcherResponse(
+    userMessage,
+    sessionId,
+    incidentContext = null
+  ) {
+    try {
+      // Get or initialize dispatcher history
+      if (!this.dispatcherHistory.has(sessionId)) {
+        this.dispatcherHistory.set(sessionId, [
+          {
+            role: "system",
+            content: `Ты — диспетчер экстренных служб 102 (полиция). Твоя задача — профессионально общаться с заявителем.
+
+ПРАВИЛА:
+1. Говори КРАТКО — каждый ответ будет озвучен, не более 2 предложений
+2. Представься только в начале: "Служба 102, слушаю вас"
+3. Задавай ОДИН уточняющий вопрос за раз
+4. Говори спокойно и уверенно
+5. Если заявитель в панике — успокаивай
+6. Получай информацию в порядке важности:
+   - Что случилось?
+   - Где это происходит? (точный адрес)
+   - Есть ли пострадавшие?
+   - Есть ли оружие/угроза?
+   - Приметы подозреваемых
+7. Подтверждай получение важной информации
+8. Говори "Помощь уже направлена" когда собрано достаточно данных
+
+СТИЛЬ: профессиональный, спокойный, с эмпатией но без лишних слов.
+НЕ ДЕЛАЙ: не зачитывай резюме, не говори техническим языком, не перегружай информацией.`,
+          },
+        ]);
+      }
+
+      const history = this.dispatcherHistory.get(sessionId);
+
+      // Add context about what we already know (for dispatcher's awareness)
+      let contextMessage = userMessage;
+      if (incidentContext && Object.keys(incidentContext).length > 0) {
+        const known = [];
+        if (incidentContext.address)
+          known.push(`адрес: ${incidentContext.address}`);
+        if (incidentContext.category)
+          known.push(`тип: ${incidentContext.categoryRu}`);
+        if (incidentContext.victims)
+          known.push(`пострадавшие: ${incidentContext.victims}`);
+        if (incidentContext.weapons)
+          known.push(`оружие: ${incidentContext.weapons}`);
+
+        if (known.length > 0) {
+          contextMessage = `[Известно: ${known.join(
+            ", "
+          )}]\n\nЗаявитель: ${userMessage}`;
+        }
+      }
+
+      history.push({ role: "user", content: contextMessage });
+
+      const completion = await this.openai.chat.completions.create({
+        model: process.env.AI_MODEL || "gpt-4o-mini",
+        messages: history,
+        max_tokens: 100, // Very short for quick voice response
+        temperature: 0.5,
+      });
+
+      const response = completion.choices[0].message.content;
+      history.push({ role: "assistant", content: response });
+
+      // Keep only last 20 messages
+      if (history.length > 22) {
+        const systemMessage = history[0];
+        this.dispatcherHistory.set(sessionId, [
+          systemMessage,
+          ...history.slice(-20),
+        ]);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Dispatcher response error:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Convert text to speech using OpenAI TTS
    * @param {string} text - Text to convert to speech
    * @returns {Promise<Buffer>} Audio buffer in mp3 format
@@ -256,42 +349,104 @@ class AIService {
   }
 
   /**
-   * Full pipeline: Audio -> Text -> Incident Analysis -> AI Response -> Audio
+   * Merge new incident data with accumulated data
+   * @param {string} sessionId
+   * @param {object} newData - New incident analysis
+   * @returns {object} Merged incident data
+   */
+  mergeIncidentData(sessionId, newData) {
+    let accumulated = this.incidentData.get(sessionId) || {};
+
+    // Merge - newer non-null values override
+    const merged = { ...accumulated };
+
+    for (const [key, value] of Object.entries(newData)) {
+      if (value !== null && value !== undefined) {
+        // For needsClarification, accumulate unique items
+        if (key === "needsClarification" && Array.isArray(value)) {
+          merged[key] = [...new Set([...(accumulated[key] || []), ...value])];
+        }
+        // For priority, keep the highest
+        else if (key === "priority") {
+          const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
+          if (
+            !accumulated[key] ||
+            priorities[value] > priorities[accumulated[key]]
+          ) {
+            merged[key] = value;
+            merged.priorityEmoji = newData.priorityEmoji;
+          }
+        } else {
+          merged[key] = value;
+        }
+      }
+    }
+
+    this.incidentData.set(sessionId, merged);
+    return merged;
+  }
+
+  /**
+   * Full pipeline: Audio -> Text -> [Analyst + Dispatcher in parallel] -> Audio
+   * Analyst: Updates CAD silently
+   * Dispatcher: Responds with voice
    * @param {Buffer} audioBuffer - Input audio
    * @param {string} sessionId - Session ID
    * @returns {Promise<{text: string, response: string, audio: Buffer, incident: object}>}
    */
   async processAudio(audioBuffer, sessionId) {
     const userText = await this.speechToText(audioBuffer, sessionId);
-    console.log(`[${sessionId}] Заявитель: ${userText}`);
+    console.log(`[${sessionId}] 📞 Заявитель: ${userText}`);
 
-    // Analyze incident in parallel with generating response
-    const [incident, aiResponse] = await Promise.all([
+    // Get current accumulated incident data for context
+    const currentIncident = this.incidentData.get(sessionId) || {};
+
+    // Run BOTH AIs in parallel:
+    // 1. Analyst - analyzes and updates CAD (silent)
+    // 2. Dispatcher - talks to caller (voice)
+    const [incidentAnalysis, dispatcherResponse] = await Promise.all([
       this.analyzeIncident(userText),
-      this.generateResponse(userText, sessionId),
+      this.generateDispatcherResponse(userText, sessionId, currentIncident),
     ]);
 
-    console.log(
-      `[${sessionId}] Инцидент: ${incident.priorityEmoji} ${incident.categoryRu} | Эмоция: ${incident.emotionEmoji} ${incident.emotion}`
-    );
-    console.log(`[${sessionId}] Рекомендация: ${aiResponse}`);
+    // Merge new analysis with accumulated CAD data
+    const mergedIncident = this.mergeIncidentData(sessionId, incidentAnalysis);
 
-    const responseAudio = await this.textToSpeech(aiResponse);
+    console.log(
+      `[${sessionId}] 📋 CAD: ${mergedIncident.priorityEmoji || "🟡"} ${
+        mergedIncident.categoryRu || "Не определено"
+      } | 😰 ${mergedIncident.emotion || "спокойствие"}`
+    );
+    console.log(`[${sessionId}] 🎙️ Диспетчер: ${dispatcherResponse}`);
+
+    // TTS only for dispatcher response (not the analysis!)
+    const responseAudio = await this.textToSpeech(dispatcherResponse);
 
     return {
       text: userText,
-      response: aiResponse,
+      response: dispatcherResponse, // This is what gets spoken
       audio: responseAudio,
-      incident: incident,
+      incident: mergedIncident, // Accumulated CAD data
     };
   }
 
   /**
-   * Clear conversation history for a session
+   * Get accumulated incident data for a session
+   * @param {string} sessionId
+   * @returns {object} Accumulated incident data
+   */
+  getIncidentData(sessionId) {
+    return this.incidentData.get(sessionId) || {};
+  }
+
+  /**
+   * Clear all history for a session
    * @param {string} sessionId
    */
   clearHistory(sessionId) {
     this.conversationHistory.delete(sessionId);
+    this.dispatcherHistory.delete(sessionId);
+    this.incidentData.delete(sessionId);
   }
 }
 

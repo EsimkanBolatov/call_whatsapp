@@ -97,6 +97,9 @@ io.on("connection", (socket) => {
       recordingService.addMessage(sessionId, "user", result.text);
       recordingService.addMessage(sessionId, "ai", result.response);
 
+      // Save/update CAD data
+      recordingService.updateIncidentData(sessionId, result.incident);
+
       // Send response audio back with incident analysis
       socket.emit("ai-response", {
         text: result.text,
