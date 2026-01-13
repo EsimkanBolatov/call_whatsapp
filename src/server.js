@@ -24,6 +24,7 @@ const recordingService = new RecordingService();
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "client")));
+app.use("/recordings", express.static(path.join(__dirname, "../recordings")));
 app.use(express.json());
 
 // API Routes

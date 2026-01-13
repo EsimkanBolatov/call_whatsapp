@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Админ панель - Просмотр разговоров</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <header class="sidebar-header">
+          <h1>История звонков</h1>
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Поиск..." />
+          </div>
+          <div class="filters-container">
+            <button class="filter-btn active" data-filter="all">Все</button>
+            <button class="filter-btn" data-filter="police">Полиция</button>
+            <button class="filter-btn" data-filter="patrol">Патруль</button>
+            <button class="filter-btn" data-filter="traffic">ДПС</button>
+            <button class="filter-btn" data-filter="info">Справочная</button>
+          </div>
+        </header>
+        <div class="conversation-list" id="conversationList">
+          <!-- List items will be injected here -->
+          <div class="loading">Загрузка...</div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-state-content">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="feather feather-message-square"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              ></path>
+            </svg>
+            <h2>Выберите разговор</h2>
+            <p>
+              Выберите разговор из списка слева, чтобы посмотреть детали и
+              транскрипцию.
+            </p>
+          </div>
+        </div>
+
+        <div id="conversationDetail" class="conversation-detail hidden">
+          <header class="detail-header">
+            <div class="header-info">
+              <h2 id="detailSessionId">Session ID</h2>
+              <div class="meta-tags">
+                <span class="tag date" id="detailDate">Date</span>
+                <span class="tag time" id="detailTime">Time</span>
+                <span class="tag duration" id="detailDuration">Duration</span>
+              </div>
+            </div>
+            <div class="header-actions">
+              <button id="refreshBtn" class="btn icon-btn" title="Обновить">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path
+                    d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="detail-grid">
+            <div class="chat-section">
+              <div class="section-title">Транскрипция</div>
+              <div class="chat-container" id="chatContainer">
+                <!-- Chat messages go here -->
+              </div>
+            </div>
+
+            <div class="info-section">
+              <div class="card caller-info">
+                <h3>Информация о вызывающем</h3>
+                <div class="info-row">
+                  <span class="label">IP Адрес:</span>
+                  <span class="value" id="callerIp">-</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Устройство:</span>
+                  <span class="value" id="callerDevice">-</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Геолокация:</span>
+                  <span class="value" id="callerLocation">-</span>
+                </div>
+              </div>
+
+              <div class="card incident-info">
+                <h3>Данные инцидента (CAD)</h3>
+                <div id="incidentDataContent" class="json-view">
+                  <p class="no-data">Нет данных</p>
+                </div>
+              </div>
+
+              <div class="card recordings-info">
+                <h3>Аудиозаписи</h3>
+                <div class="audio-player-wrapper" id="userAudioWrapper">
+                  <span class="audio-label">Заявитель</span>
+                  <audio controls id="userAudioInfo"></audio>
+                  <p id="noUserAudio" class="no-audio-text hidden">
+                    Нет записи
+                  </p>
+                </div>
+                <div class="audio-player-wrapper" id="aiAudioWrapper">
+                  <span class="audio-label">AI Ассистент</span>
+                  <audio controls id="aiAudioInfo"></audio>
+                  <p id="noAiAudio" class="no-audio-text hidden">Нет записи</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="admin.js"></script>
+  </body>
+</html>

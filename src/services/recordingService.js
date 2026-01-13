@@ -248,6 +248,7 @@ class RecordingService {
           startTime: data.startTime,
           duration: data.durationSeconds,
           messageCount: data.messages.length,
+          incidentData: data.incidentData,
         };
       });
   }
