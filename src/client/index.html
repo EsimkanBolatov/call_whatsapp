@@ -3,28 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NG911 Co-Pilot | Диспетчер экстренных служб</title>
+    <title>Экстренный вызов 102</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --primary: #6366f1;
-        --primary-dark: #4f46e5;
-        --primary-light: #818cf8;
-        --success: #10b981;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        --bg-dark: #0f172a;
-        --bg-card: #1e293b;
-        --bg-card-hover: #334155;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --border: #334155;
-        --glow: rgba(99, 102, 241, 0.4);
+        --primary: #0056b3;
+        --danger: #dc3545;
+        --bg: #ffffff;
+        --text: #333333;
+        --gray: #f8f9fa;
+        --border: #dee2e6;
       }
 
       * {
@@ -34,507 +27,148 @@
       }
 
       body {
-        font-family: "Inter", sans-serif;
-        background: var(--bg-dark);
-        color: var(--text-primary);
-        min-height: 100vh;
+        font-family: "Roboto", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 2rem;
+        justify-content: center;
+        padding: 1rem;
       }
 
       .container {
-        max-width: 600px;
+        max-width: 400px;
         width: 100%;
+        text-align: center;
       }
 
-      header {
-        text-align: center;
+      .header {
         margin-bottom: 2rem;
       }
 
-      h1 {
-        font-size: 2rem;
+      .header h1 {
+        font-size: 1.5rem;
         font-weight: 700;
-        background: linear-gradient(
-          135deg,
-          var(--primary-light),
-          var(--primary)
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--text);
         margin-bottom: 0.5rem;
       }
 
-      .subtitle {
-        color: var(--text-secondary);
-        font-size: 0.95rem;
-      }
-
-      .card {
-        background: var(--bg-card);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid var(--border);
-        transition: all 0.3s ease;
-      }
-
-      .card:hover {
-        border-color: var(--primary);
-        box-shadow: 0 0 30px var(--glow);
-      }
-
-      .card-title {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-secondary);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .ai-caller {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-      }
-
-      .ai-avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(
-          135deg,
-          var(--primary),
-          var(--primary-dark)
-        );
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
-        position: relative;
-        animation: pulse-ring 2s infinite;
-      }
-
-      .ai-avatar.active {
-        animation: active-pulse 1.5s infinite;
-      }
-
-      .ai-avatar.listening {
-        animation: listening-pulse 0.5s infinite;
-        background: linear-gradient(135deg, var(--success), #059669);
-      }
-
-      .ai-avatar.processing {
-        animation: processing-spin 2s linear infinite;
-      }
-
-      @keyframes pulse-ring {
-        0% {
-          box-shadow: 0 0 0 0 var(--glow);
-        }
-        70% {
-          box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-        }
-      }
-
-      @keyframes active-pulse {
-        0%,
-        100% {
-          transform: scale(1);
-          box-shadow: 0 0 20px var(--glow);
-        }
-        50% {
-          transform: scale(1.05);
-          box-shadow: 0 0 40px var(--glow);
-        }
-      }
-
-      @keyframes listening-pulse {
-        0%,
-        100% {
-          transform: scale(1);
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
-        }
-        50% {
-          transform: scale(1.08);
-          box-shadow: 0 0 50px rgba(16, 185, 129, 0.8);
-        }
-      }
-
-      @keyframes processing-spin {
-        0% {
-          box-shadow: 0 0 20px var(--warning);
-        }
-        50% {
-          box-shadow: 0 0 40px var(--warning);
-        }
-        100% {
-          box-shadow: 0 0 20px var(--warning);
-        }
-      }
-
-      .status {
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        text-align: center;
-      }
-
-      .status.active {
-        color: var(--success);
-      }
-      .status.processing {
-        color: var(--warning);
-      }
-      .status.listening {
-        color: var(--success);
-        font-weight: 600;
-      }
-
-      .btn-group {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-
-      .btn {
-        padding: 0.875rem 1.75rem;
-        border-radius: 12px;
-        font-size: 1rem;
-        font-weight: 600;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-primary {
-        background: linear-gradient(
-          135deg,
-          var(--primary),
-          var(--primary-dark)
-        );
-        color: white;
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px var(--glow);
-      }
-
-      .btn-danger {
-        background: linear-gradient(135deg, var(--danger), #dc2626);
-        color: white;
-      }
-
-      .btn-danger:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
-      }
-
-      .transcript {
-        max-height: 300px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .message {
-        padding: 0.75rem 1rem;
-        border-radius: 12px;
-        max-width: 85%;
-        animation: fadeIn 0.3s ease;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .message.user {
-        background: var(--primary);
-        align-self: flex-end;
-        border-bottom-right-radius: 4px;
-      }
-
-      .message.ai {
-        background: var(--bg-card-hover);
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-      }
-
-      .message-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        opacity: 0.7;
-        margin-bottom: 0.25rem;
-      }
-
-      .message-text {
-        font-size: 0.95rem;
-        line-height: 1.4;
-      }
-
-      .empty-transcript {
-        text-align: center;
-        color: var(--text-secondary);
-        padding: 2rem;
-        font-style: italic;
-      }
-
-      /* Incident Card Styles */
-      .incident-card {
-        background: var(--bg-card-hover);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid var(--primary);
-      }
-
-      .incident-card.critical {
-        border-left-color: #ef4444;
-        background: rgba(239, 68, 68, 0.1);
-      }
-      .incident-card.high {
-        border-left-color: #f59e0b;
-        background: rgba(245, 158, 11, 0.1);
-      }
-      .incident-card.medium {
-        border-left-color: #eab308;
-        background: rgba(234, 179, 8, 0.1);
-      }
-      .incident-card.low {
-        border-left-color: #22c55e;
-        background: rgba(34, 197, 94, 0.1);
-      }
-
-      .incident-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.75rem;
-      }
-
-      .incident-priority {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        font-size: 1rem;
-      }
-
-      .incident-category {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-      }
-
-      .incident-details {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-        font-size: 0.85rem;
-      }
-
-      .incident-detail {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-
-      .incident-detail-label {
-        color: var(--text-secondary);
-        min-width: 60px;
-      }
-
-      .incident-detail-value {
-        color: var(--text-primary);
-        font-weight: 500;
-      }
-
-      .incident-clarification {
-        margin-top: 0.75rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--border);
-        color: var(--warning);
-        font-size: 0.85rem;
-      }
-
-      .emotion-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.2rem 0.5rem;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        font-size: 0.75rem;
-        margin-left: 0.5rem;
-      }
-
-      .emotion-emoji {
-        font-size: 1rem;
-      }
-
-      .emotion-text {
-        opacity: 0.8;
-      }
-
-      .volume-meter {
-        width: 200px;
-        height: 8px;
-        background: var(--bg-card-hover);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-top: 0.5rem;
-      }
-
-      .volume-bar {
-        height: 100%;
-        background: linear-gradient(90deg, var(--success), var(--warning));
-        width: 0%;
-        transition: width 0.05s;
-        border-radius: 4px;
-      }
-
-      .instructions {
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px dashed var(--primary);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
-      }
-
-      .instructions h4 {
-        color: var(--primary-light);
-        margin-bottom: 0.5rem;
+      .header p {
+        color: #6c757d;
         font-size: 0.9rem;
       }
 
-      .instructions ol {
-        padding-left: 1.25rem;
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        line-height: 1.6;
-      }
-
-      audio {
-        display: none;
-      }
-
-      .history-list {
+      .call-section {
+        background: var(--gray);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 3rem 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
       }
 
-      .history-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        background: var(--bg-card-hover);
-        border-radius: 8px;
+      .status-text {
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        min-height: 1.5rem;
+        color: #6c757d;
+      }
+
+      #status.listening {
+        color: var(--primary);
+        font-weight: bold;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .btn-main {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: none;
+        background-color: var(--primary);
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        box-shadow: 0 4px 15px rgba(0, 86, 179, 0.3);
       }
 
-      .history-item:hover {
-        background: var(--border);
+      .btn-main:active {
+        transform: scale(0.95);
       }
-      .history-time {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
+
+      .btn-main span {
+        font-size: 2rem;
       }
-      .history-duration {
-        font-size: 0.8rem;
-        color: var(--primary-light);
+
+      /* Red state for active call (Hangup) */
+      .btn-main.active {
+        background-color: var(--danger);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+      }
+
+      .btn-main:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      /* Hidden elements to keep JS working */
+      .hidden {
+        display: none !important;
+      }
+
+      #aiAvatar {
+        transition: all 0.3s;
+        margin-bottom: 20px;
+        font-size: 3rem;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <header>
-        <h1>🚨 NG911 Co-Pilot</h1>
-        <p class="subtitle">
-          Интеллектуальный помощник диспетчера экстренных служб
-        </p>
+      <header class="header">
+        <h1>Экстренная служба</h1>
+        <p>Нажмите кнопку для связи</p>
       </header>
 
-      <div class="card">
-        <div class="card-title"><span>📞</span> Голосовой звонок</div>
-        <div class="ai-caller">
-          <div class="ai-avatar" id="aiAvatar">🚨</div>
-          <div class="status" id="status">Нажмите кнопку для звонка</div>
-          <div class="volume-meter" id="volumeMeter" style="display: none">
-            <div class="volume-bar" id="volumeBar"></div>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-primary" id="callBtn">
-              <span>🚨</span> Начать сессию
-            </button>
-            <button class="btn btn-danger" id="hangupBtn" disabled>
-              <span>📵</span> Завершить
-            </button>
-          </div>
-        </div>
-        <div class="instructions">
-          <h4>Как пользоваться:</h4>
-          <ol>
-            <li>Нажмите "Начать сессию" для подключения</li>
-            <li>Говорите — система автоматически распознает речь</li>
-            <li>AI проанализирует и выдаст рекомендации</li>
-            <li>Нажмите "Завершить" для окончания</li>
-          </ol>
-        </div>
-      </div>
+      <div class="call-section">
+        <div id="aiAvatar">🚨</div>
+        <div class="status-text" id="status">Готов к работе</div>
 
-      <div class="card">
-        <div class="card-title"><span>💬</span> Транскрипция разговора</div>
-        <div class="transcript" id="transcript">
-          <div class="empty-transcript">
-            Начните разговор, чтобы увидеть транскрипцию
-          </div>
-        </div>
-      </div>
+        <!-- Single toggle button for UI simplicity -->
+        <button class="btn-main" id="toggleCheck"><span>📞</span> Вызов</button>
 
-      <div class="card" id="cadCard" style="display: none">
-        <div class="card-title"><span>📋</span> Карточка инцидента (CAD)</div>
-        <div id="incidentPanel">
-          <!-- Incident data will be inserted here -->
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><span>📚</span> История разговоров</div>
-        <div class="history-list" id="historyList">
-          <div class="empty-transcript">Загрузка истории...</div>
+        <!-- Hidden real controls -->
+        <div class="hidden">
+          <button id="callBtn">Call</button>
+          <button id="hangupBtn">Hangup</button>
+          <div id="transcript"></div>
+          <div id="historyList"></div>
+          <div id="volumeMeter"><div id="volumeBar"></div></div>
+          <div id="cadCard"><div id="incidentPanel"></div></div>
         </div>
       </div>
     </div>
@@ -545,7 +179,7 @@
     <script>
       const socket = io();
 
-      // DOM Elements
+      // Original DOM Elements (Logic preserved)
       const callBtn = document.getElementById("callBtn");
       const hangupBtn = document.getElementById("hangupBtn");
       const statusEl = document.getElementById("status");
@@ -555,6 +189,21 @@
       const historyList = document.getElementById("historyList");
       const volumeMeter = document.getElementById("volumeMeter");
       const volumeBar = document.getElementById("volumeBar");
+      const incidentPanel = document.getElementById("incidentPanel");
+
+      // New UI Element
+      const toggleCheck = document.getElementById("toggleCheck");
+
+      // UI Logic Binding
+      toggleCheck.onclick = () => {
+        if (!isListening && !isRecording) {
+          // Start Call
+          callBtn.click();
+        } else {
+          // End Call
+          hangupBtn.click();
+        }
+      };
 
       // State
       let sessionId = null;
@@ -564,22 +213,21 @@
       let processor = null;
       let audioChunks = [];
 
-      // Voice Activity Detection settings - OPTIMIZED for faster response
-      const VAD_THRESHOLD = 0.04; // Higher threshold to filter noise
-      const SILENCE_DURATION = 700; // Reduced from 1500ms for faster response
-      const MIN_SPEECH_DURATION = 400; // Minimum recording duration
-      const NOISE_FLOOR_SAMPLES = 30; // Samples to calculate noise floor
+      // Voice Activity Detection settings
+      const VAD_THRESHOLD = 0.04;
+      const SILENCE_DURATION = 700;
+      const MIN_SPEECH_DURATION = 400;
+      const NOISE_FLOOR_SAMPLES = 30;
 
-      // Noise filtering state
-      let noiseFloor = 0.02; // Adaptive noise floor
-      let noiseFloorSamples = []; // Recent volume samples for noise calculation
-      let consecutiveSpeechFrames = 0; // Require multiple frames to confirm speech
-      const SPEECH_CONFIRM_FRAMES = 3; // Frames needed to confirm speech start
+      let noiseFloor = 0.02;
+      let noiseFloorSamples = [];
+      let consecutiveSpeechFrames = 0;
+      const SPEECH_CONFIRM_FRAMES = 3;
 
       let isListening = false;
       let isRecording = false;
       let isSpeaking = false;
-      let isProcessing = false; // Block recording while processing
+      let isProcessing = false;
       let silenceTimer = null;
       let speechStartTime = null;
       let isAiSpeaking = false;
@@ -587,7 +235,13 @@
       // Connect to server
       socket.on("connect", () => {
         console.log("Connected to server");
-        loadHistory();
+        statusEl.innerText = "Готов к вызову";
+      });
+
+      socket.on("disconnect", () => {
+        statusEl.innerText = "Нет соединения";
+        toggleCheck.disabled = true;
+        toggleCheck.style.backgroundColor = "#ccc";
       });
 
       // Start call with AI
@@ -600,7 +254,6 @@
               echoCancellation: true,
               noiseSuppression: true,
               autoGainControl: true,
-              // Additional constraints for noise reduction
               googEchoCancellation: true,
               googAutoGainControl: true,
               googNoiseSuppression: true,
@@ -611,47 +264,17 @@
           // Collect device info
           const deviceInfo = {
             userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            language: navigator.language,
-            screenWidth: screen.width,
-            screenHeight: screen.height,
-            colorDepth: screen.colorDepth,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            cookiesEnabled: navigator.cookieEnabled,
             onLine: navigator.onLine,
           };
 
-          // Try to get geolocation
-          let location = null;
-          try {
-            const pos = await new Promise((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0,
-              });
-            });
-            location = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              altitude: pos.coords.altitude,
-              altitudeAccuracy: pos.coords.altitudeAccuracy,
-              heading: pos.coords.heading,
-              speed: pos.coords.speed,
-              timestamp: new Date(pos.timestamp).toISOString(),
-            };
-            console.log("Geolocation obtained:", location);
-          } catch (geoErr) {
-            console.warn("Geolocation unavailable:", geoErr.message);
-            location = { error: geoErr.message };
-          }
+          socket.emit("call-ai", { deviceInfo });
 
-          socket.emit("call-ai", { deviceInfo, location });
-          callBtn.disabled = true;
-          updateStatus("Подключение...", "processing");
+          // UI Update
+          toggleCheck.classList.add("active");
+          toggleCheck.innerHTML = "<span>📵</span> Сброс";
+          statusEl.innerText = "Подключение...";
         } catch (err) {
-          updateStatus("Ошибка: микрофон недоступен", "");
+          statusEl.innerText = "Ошибка микрофона";
           console.error("Microphone error:", err);
         }
       };
@@ -659,11 +282,7 @@
       // AI call started
       socket.on("ai-call-started", (data) => {
         sessionId = data.sessionId;
-        callBtn.disabled = true;
-        hangupBtn.disabled = false;
-
-        transcriptEl.innerHTML = "";
-        noiseFloorSamples = []; // Reset noise floor
+        noiseFloorSamples = [];
         noiseFloor = 0.02;
         startListening();
       });
@@ -676,14 +295,12 @@
         });
         const source = audioContext.createMediaStreamSource(mediaStream);
 
-        // Analyser for volume detection
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 1024; // Larger FFT for better frequency resolution
-        analyser.smoothingTimeConstant = 0.3; // Less smoothing for faster response
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.3;
         source.connect(analyser);
 
-        // Processor for recording
-        processor = audioContext.createScriptProcessor(2048, 1, 1); // Smaller buffer for lower latency
+        processor = audioContext.createScriptProcessor(2048, 1, 1);
         processor.onaudioprocess = (e) => {
           if (isRecording) {
             const inputData = e.inputBuffer.getChannelData(0);
@@ -694,16 +311,14 @@
         processor.connect(audioContext.destination);
 
         isListening = true;
-        volumeMeter.style.display = "block";
-        updateStatus("🎙️ Калибровка шума...", "listening");
-        aiAvatar.classList.add("active");
+        statusEl.innerText = "Слушаю...";
+        statusEl.classList.add("listening");
+        aiAvatar.innerText = "👂";
 
-        // Calibrate noise floor first
         setTimeout(() => {
-          updateStatus("🎙️ Слушаю... Говорите!", "listening");
+          statusEl.innerText = "Говорите...";
         }, 1000);
 
-        // Start voice activity detection loop
         detectVoiceActivity();
       }
 
@@ -713,10 +328,8 @@
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(dataArray);
 
-        // Calculate volume from speech frequency range (100Hz - 3000Hz)
-        // At 16kHz sample rate: bin = freq * fftSize / sampleRate
-        const lowBin = Math.floor((100 * 1024) / 16000); // ~6
-        const highBin = Math.floor((3000 * 1024) / 16000); // ~192
+        const lowBin = Math.floor((100 * 1024) / 16000);
+        const highBin = Math.floor((3000 * 1024) / 16000);
 
         let speechEnergy = 0;
         for (let i = lowBin; i <= highBin; i++) {
@@ -725,13 +338,12 @@
         speechEnergy /= highBin - lowBin + 1;
         const volume = speechEnergy / 255;
 
-        // Update adaptive noise floor when not speaking
+        // Adaptive noise floor
         if (!isRecording && !isAiSpeaking) {
           noiseFloorSamples.push(volume);
           if (noiseFloorSamples.length > NOISE_FLOOR_SAMPLES) {
             noiseFloorSamples.shift();
           }
-          // Noise floor = average of lowest 50% of samples
           const sorted = [...noiseFloorSamples].sort((a, b) => a - b);
           const lowerHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
           if (lowerHalf.length > 0) {
@@ -740,18 +352,8 @@
           }
         }
 
-        // Dynamic threshold based on noise floor
         const dynamicThreshold = Math.max(VAD_THRESHOLD, noiseFloor * 1.8);
 
-        // Update volume meter (show relative to threshold)
-        const meterValue = Math.min((volume / dynamicThreshold) * 50, 100);
-        volumeBar.style.width = `${meterValue}%`;
-        volumeBar.style.background =
-          volume > dynamicThreshold
-            ? "linear-gradient(90deg, var(--success), #10b981)"
-            : "linear-gradient(90deg, var(--text-secondary), var(--text-secondary))";
-
-        // Don't process while AI is speaking or processing
         if (isAiSpeaking || isProcessing) {
           consecutiveSpeechFrames = 0;
           requestAnimationFrame(detectVoiceActivity);
@@ -762,31 +364,29 @@
 
         if (isCurrentlySpeaking && !isRecording) {
           consecutiveSpeechFrames++;
-          // Require multiple consecutive frames to confirm speech (filters clicks/pops)
           if (consecutiveSpeechFrames >= SPEECH_CONFIRM_FRAMES) {
             startRecording();
           }
         } else if (!isCurrentlySpeaking && !isRecording) {
           consecutiveSpeechFrames = 0;
         } else if (isCurrentlySpeaking && isRecording) {
-          // Reset silence timer
           clearTimeout(silenceTimer);
           silenceTimer = null;
           isSpeaking = true;
+          statusEl.innerText = "Запись...";
         } else if (!isCurrentlySpeaking && isRecording && isSpeaking) {
-          // Start silence timer
           if (!silenceTimer) {
+            statusEl.innerText = "Тишина...";
             silenceTimer = setTimeout(() => {
               const duration = Date.now() - speechStartTime;
               if (duration >= MIN_SPEECH_DURATION) {
                 stopRecordingAndSend();
               } else {
-                // Too short, reset
                 audioChunks = [];
                 isRecording = false;
                 isSpeaking = false;
                 consecutiveSpeechFrames = 0;
-                updateStatus("🎙️ Слушаю... Говорите!", "listening");
+                statusEl.innerText = "Слушаю...";
               }
             }, SILENCE_DURATION);
           }
@@ -800,403 +400,103 @@
         isRecording = true;
         isSpeaking = true;
         speechStartTime = Date.now();
-        silenceTimer = null;
-
-        updateStatus("🔴 Записываю вашу речь...", "listening");
-        aiAvatar.classList.add("listening");
-        aiAvatar.classList.remove("active");
+        console.log("Started recording");
+        // Visual feedback
+        aiAvatar.innerText = "🎤";
       }
 
-      async function stopRecordingAndSend() {
-        if (!isRecording || audioChunks.length === 0) return;
-
+      function stopRecordingAndSend() {
         isRecording = false;
         isSpeaking = false;
-        isProcessing = true; // Block new recordings
+        isProcessing = true;
+        consecutiveSpeechFrames = 0;
         clearTimeout(silenceTimer);
         silenceTimer = null;
-        consecutiveSpeechFrames = 0;
 
-        updateStatus("⏳ Обрабатываю...", "processing");
-        aiAvatar.classList.remove("listening");
-        aiAvatar.classList.add("processing");
+        statusEl.innerText = "Обработка...";
+        statusEl.classList.remove("listening");
+        aiAvatar.innerText = "🧠";
 
-        // Create audio buffer from chunks
-        const totalLength = audioChunks.reduce(
-          (acc, chunk) => acc + chunk.length,
-          0
-        );
+        const audioBlob = exportAudio();
+        socket.emit("audio-chunk", {
+          sessionId: sessionId,
+          audio: audioBlob,
+        });
+      }
 
-        if (totalLength < 1000) {
-          // Too short
-          updateStatus("🎙️ Слушаю... Говорите!", "listening");
-          aiAvatar.classList.remove("processing");
-          aiAvatar.classList.add("active");
-          return;
-        }
-
-        const audioBuffer = audioContext.createBuffer(
-          1,
-          totalLength,
-          audioContext.sampleRate
-        );
-        const channelData = audioBuffer.getChannelData(0);
-
+      function exportAudio() {
+        // Flatten chunks
+        let totalLength = 0;
+        for (let chunk of audioChunks) totalLength += chunk.length;
+        const result = new Float32Array(totalLength);
         let offset = 0;
-        for (const chunk of audioChunks) {
-          channelData.set(chunk, offset);
+        for (let chunk of audioChunks) {
+          result.set(chunk, offset);
           offset += chunk.length;
         }
-
-        // Convert to WAV
-        const wavBlob = audioBufferToWav(audioBuffer);
-        const base64 = await blobToBase64(wavBlob);
-
-        socket.emit("audio-chunk", {
-          audioData: base64,
-          sessionId: sessionId,
-          format: "wav",
-        });
-
-        audioChunks = [];
+        return result;
       }
 
-      // Convert AudioBuffer to WAV
-      function audioBufferToWav(audioBuffer) {
-        const numChannels = 1;
-        const sampleRate = audioBuffer.sampleRate;
-        const format = 1;
-        const bitDepth = 16;
+      // Handle AI Audio Response
+      socket.on("ai-audio_response", (data) => {
+        isProcessing = false;
+        statusEl.innerText = "Говорит диспетчер...";
+        aiAvatar.innerText = "🗣️";
 
-        const bytesPerSample = bitDepth / 8;
-        const blockAlign = numChannels * bytesPerSample;
-
-        const samples = audioBuffer.getChannelData(0);
-        const dataLength = samples.length * bytesPerSample;
-        const buffer = new ArrayBuffer(44 + dataLength);
-        const view = new DataView(buffer);
-
-        writeString(view, 0, "RIFF");
-        view.setUint32(4, 36 + dataLength, true);
-        writeString(view, 8, "WAVE");
-        writeString(view, 12, "fmt ");
-        view.setUint32(16, 16, true);
-        view.setUint16(20, format, true);
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * blockAlign, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, bitDepth, true);
-        writeString(view, 36, "data");
-        view.setUint32(40, dataLength, true);
-
-        let writeOffset = 44;
-        for (let i = 0; i < samples.length; i++) {
-          const sample = Math.max(-1, Math.min(1, samples[i]));
-          view.setInt16(
-            writeOffset,
-            sample < 0 ? sample * 0x8000 : sample * 0x7fff,
-            true
-          );
-          writeOffset += 2;
-        }
-
-        return new Blob([buffer], { type: "audio/wav" });
-      }
-
-      function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
-        }
-      }
-
-      // AI processing status
-      socket.on("ai-processing", (data) => {
-        updateStatus(data.status, "processing");
-      });
-
-      // AI response received
-      socket.on("ai-response", (data) => {
-        isProcessing = false; // Allow recording again
-        aiAvatar.classList.remove("processing", "listening");
-
-        // Show user message with incident info
-        addMessage("user", data.text, data.incident);
-        addMessage("ai", data.response);
-
-        // Update CAD card
-        if (data.incident) {
-          updateIncidentCard(data.incident);
-        }
-
-        // Play audio response
-        isAiSpeaking = true;
-        const audioBlob = base64ToBlob(data.audio, "audio/mp3");
+        const audioBlob = new Blob([data.audio], { type: "audio/mpeg" });
         const audioUrl = URL.createObjectURL(audioBlob);
         aiAudio.src = audioUrl;
-        aiAudio.play();
-
-        updateStatus("🔊 AI отвечает...", "active");
-        aiAvatar.classList.add("active");
+        isAiSpeaking = true;
 
         aiAudio.onended = () => {
           isAiSpeaking = false;
-          if (isListening) {
-            updateStatus("🎙️ Слушаю... Говорите!", "listening");
-          }
+          statusEl.innerText = "Слушаю...";
+          statusEl.classList.add("listening");
+          aiAvatar.innerText = "👂";
+          URL.revokeObjectURL(audioUrl);
         };
+
+        aiAudio.play().catch((e) => console.error("Audio play error", e));
       });
 
-      // AI error
-      socket.on("ai-error", (data) => {
-        isProcessing = false; // Allow recording again
-        aiAvatar.classList.remove("processing", "listening");
-        aiAvatar.classList.add("active");
-        updateStatus("❌ " + data.error, "");
-        console.error("AI Error:", data.details);
-
-        // Continue listening after error
-        setTimeout(() => {
-          if (isListening) {
-            updateStatus("🎙️ Слушаю... Говорите!", "listening");
-          }
-        }, 2000);
+      // Update transcript (Empty handler for minimalist mode, or log to console)
+      socket.on("transcription", (data) => {
+        console.log("Transcription:", data);
+        // No UI update needed
       });
 
-      // End call
+      socket.on("incident-update", (data) => {
+        console.log("Incident Update:", data);
+      });
+
+      // Hangup
       hangupBtn.onclick = () => {
-        stopListening();
-        if (sessionId) {
-          socket.emit("end-ai-call", { sessionId });
-        }
+        stopCall();
       };
 
-      function stopListening() {
-        isListening = false;
-        isRecording = false;
-        isSpeaking = false;
-        isProcessing = false;
-        clearTimeout(silenceTimer);
-
-        if (processor) {
-          processor.disconnect();
-          processor = null;
-        }
-        if (analyser) {
-          analyser.disconnect();
-          analyser = null;
+      function stopCall() {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          mediaStream = null;
         }
         if (audioContext) {
           audioContext.close();
           audioContext = null;
         }
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop());
-          mediaStream = null;
-        }
+        isListening = false;
+        isRecording = false;
 
-        volumeMeter.style.display = "none";
-      }
+        // UI Reset
+        toggleCheck.classList.remove("active");
+        toggleCheck.innerHTML = "<span>📞</span> Вызов";
+        toggleCheck.style.backgroundColor = ""; // Reset to default
+        statusEl.innerText = "Вызов завершен";
+        statusEl.classList.remove("listening");
+        aiAvatar.innerText = "🚨";
 
-      socket.on("ai-call-ended", (data) => {
-        sessionId = null;
-        callBtn.disabled = false;
-        hangupBtn.disabled = true;
-
-        aiAvatar.classList.remove("active", "processing", "listening");
-        updateStatus(
-          `✅ Разговор завершён (${data.duration}с, ${data.messageCount} сообщений)`,
-          ""
-        );
-
-        loadHistory();
-      });
-
-      // Helper functions
-      function updateStatus(text, state) {
-        statusEl.textContent = text;
-        statusEl.className = "status " + state;
-      }
-
-      function addMessage(type, text, incident = null) {
-        const div = document.createElement("div");
-        div.className = `message ${type}`;
-
-        let badge = "";
-        if (incident && type === "user") {
-          badge = `
-            <span class="emotion-badge" style="background: ${getPriorityColor(
-              incident.priority
-            )}20;">
-              <span class="emotion-emoji">${
-                incident.priorityEmoji || "🟡"
-              }</span>
-              <span class="emotion-text">${incident.emotionEmoji || ""} ${
-            incident.emotion || ""
-          }</span>
-            </span>
-          `;
-        }
-
-        div.innerHTML = `
-          <div class="message-label">${
-            type === "user" ? "Заявитель" : "Co-Pilot"
-          }${badge}</div>
-          <div class="message-text">${text}</div>
-        `;
-        transcriptEl.appendChild(div);
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
-      }
-
-      function getPriorityColor(priority) {
-        const colors = {
-          critical: "#ef4444",
-          high: "#f59e0b",
-          medium: "#eab308",
-          low: "#22c55e",
-        };
-        return colors[priority] || "#6366f1";
-      }
-
-      function updateIncidentCard(incident) {
-        const cadCard = document.getElementById("cadCard");
-        const panel = document.getElementById("incidentPanel");
-
-        cadCard.style.display = "block";
-
-        const priorityLabels = {
-          critical: "КРИТИЧЕСКИЙ",
-          high: "Высокий",
-          medium: "Средний",
-          low: "Низкий",
-        };
-
-        const details = [];
-        if (incident.address)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">📍 Адрес:</span><span class="incident-detail-value">${incident.address}</span></div>`
-          );
-        if (incident.victims)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">🩹 Жертвы:</span><span class="incident-detail-value">${incident.victims}</span></div>`
-          );
-        if (incident.weapons)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">🔫 Оружие:</span><span class="incident-detail-value">${incident.weapons}</span></div>`
-          );
-        if (incident.suspects)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">👤 Подозр.:</span><span class="incident-detail-value">${incident.suspects}</span></div>`
-          );
-        if (incident.vehicles)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">🚗 ТС:</span><span class="incident-detail-value">${incident.vehicles}</span></div>`
-          );
-        if (incident.threatLevel)
-          details.push(
-            `<div class="incident-detail"><span class="incident-detail-label">⚠️ Угроза:</span><span class="incident-detail-value">${incident.threatLevel}</span></div>`
-          );
-
-        const clarifications =
-          incident.needsClarification && incident.needsClarification.length > 0
-            ? `<div class="incident-clarification">💡 <strong>Уточнить:</strong> ${incident.needsClarification.join(
-                ", "
-              )}</div>`
-            : "";
-
-        panel.innerHTML = `
-          <div class="incident-card ${incident.priority || "medium"}">
-            <div class="incident-header">
-              <div class="incident-priority">
-                ${incident.priorityEmoji || "🟡"} ${
-          priorityLabels[incident.priority] || "Средний"
-        }
-              </div>
-              <div class="incident-category">
-                ${incident.categoryRu || "Не определено"}
-              </div>
-            </div>
-            <div class="incident-details">
-              <div class="incident-detail">
-                <span class="incident-detail-label">😰 Эмоция:</span>
-                <span class="incident-detail-value">${
-                  incident.emotionEmoji || "😐"
-                } ${incident.emotion || "спокойствие"}</span>
-              </div>
-              ${details.join("")}
-            </div>
-            ${clarifications}
-          </div>
-        `;
-      }
-
-      async function blobToBase64(blob) {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64 = reader.result.split(",")[1];
-            resolve(base64);
-          };
-          reader.readAsDataURL(blob);
-        });
-      }
-
-      function base64ToBlob(base64, type) {
-        const binary = atob(base64);
-        const array = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          array[i] = binary.charCodeAt(i);
-        }
-        return new Blob([array], { type });
-      }
-
-      async function loadHistory() {
-        try {
-          const res = await fetch("/api/conversations");
-          const conversations = await res.json();
-
-          if (conversations.length === 0) {
-            historyList.innerHTML =
-              '<div class="empty-transcript">Нет сохранённых разговоров</div>';
-            return;
-          }
-
-          historyList.innerHTML = conversations
-            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
-            .slice(0, 10)
-            .map(
-              (c) => `
-              <div class="history-item" onclick="showConversation('${
-                c.sessionId
-              }')">
-                <span class="history-time">${new Date(
-                  c.startTime
-                ).toLocaleString("ru")}</span>
-                <span class="history-duration">${c.duration}с • ${
-                c.messageCount
-              } сообщ.</span>
-              </div>
-            `
-            )
-            .join("");
-        } catch (err) {
-          historyList.innerHTML =
-            '<div class="empty-transcript">Ошибка загрузки истории</div>';
-        }
-      }
-
-      async function showConversation(id) {
-        try {
-          const res = await fetch(`/api/conversations/${id}`);
-          const data = await res.json();
-
-          transcriptEl.innerHTML = "";
-          data.messages.forEach((m) => {
-            addMessage(m.speaker, m.text);
-          });
-        } catch (err) {
-          console.error("Error loading conversation:", err);
-        }
+        setTimeout(() => {
+          statusEl.innerText = "Нажмите кнопку для связи";
+        }, 2000);
       }
     </script>
   </body>
