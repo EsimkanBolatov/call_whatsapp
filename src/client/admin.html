@@ -16,9 +16,26 @@
     <div class="app-container">
       <aside class="sidebar">
         <header class="sidebar-header">
-          <h1>История звонков</h1>
+          <h1>
+            <a
+              href="/"
+              style="
+                text-decoration: none;
+                color: inherit;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+              "
+            >
+              <span style="font-size: 1.5rem">🚨</span> NG911 Panel
+            </a>
+          </h1>
           <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Поиск..." />
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="🔍 Поиск по ID или дате..."
+            />
           </div>
           <div class="filters-container">
             <button class="filter-btn active" data-filter="all">Все</button>
