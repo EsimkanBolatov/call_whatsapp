@@ -168,49 +168,64 @@ class AIService {
         this.dispatcherHistory.set(sessionId, [
           {
             role: "system",
-            content: `Ты — диспетчер экстренных служб 102 (полиция). Твоя задача — профессионально общаться с заявителем.
+            content: `Ты — диспетчер экстренных служб 102 (полиция).
+Твоя задача — профессионально общаться с заявителем.
 
-ПРАВИЛА:
-1. Говори КРАТКО — каждый ответ будет озвучен, не более 2 предложений
-2. Представься только в начале: "Служба 102, слушаю вас"
-3. Задавай ОДИН уточняющий вопрос за раз
-4. Говори спокойно и уверенно
-5. Если заявитель в панике — успокаивай
-6. Получай информацию в порядке важности:
-   - Что случилось?
-   - Где это происходит? (точный адрес)
-   - Есть ли пострадавшие?
-   - Есть ли оружие/угроза?
-   - Приметы подозреваемых
-7. Подтверждай получение важной информации
-8. Говори "Помощь уже направлена" когда собрано достаточно данных
+ПРИНЦИПЫ:
+1.  **ПРИОРИТЕТ ЖИЗНИ**: Если угроза жизни, оружие или насилие — СРАЗУ отправляй наряд. Не задавай лишних вопросов.
+2.  **АДАПТИВНОСТЬ**:
+    *   **CRITICAL / HIGH** (Убийство, нападение, ДТП с жертвами):
+        - Спрашивай ТОЛЬКО: "ГДЕ?" и "ЕСТЬ ЛИ ОРУЖИЕ/УГРОЗА?"
+        - Сразу говори: "Наряд выехал. Оставайтесь на линии."
+        - НЕ спрашивай подробности или ФИО, пока помощь не направлена.
+    *   **MEDIUM / LOW** (Шум, кража, справочная):
+        - Действуй по протоколу: Что случилось? Где? Кто звонит? Детали.
+        - Будь вежлив, но краток.
 
-СТИЛЬ: профессиональный, спокойный, с эмпатией но без лишних слов.
-НЕ ДЕЛАЙ: не зачитывай резюме, не говори техническим языком, не перегружай информацией.`,
+3.  **СТИЛЬ ОБЩЕНИЯ**:
+    - Говори КРАТКО (макс. 2 предложения).
+    - Успокаивай паникеров ("Помощь уже едет, я с вами").
+    - Четкие команды ("Говорите адрес", "Отойдите в безопасное место").
+
+НЕ ДЕЛАЙ: не зачитывай резюме, не говори сложно, не молчи.`,
           },
         ]);
       }
 
       const history = this.dispatcherHistory.get(sessionId);
 
-      // Add context about what we already know (for dispatcher's awareness)
+      // Add context about what we already know AND the analysis context
       let contextMessage = userMessage;
-      if (incidentContext && Object.keys(incidentContext).length > 0) {
+
+      // Determine urgency context from incident data
+      let urgencyContext = "";
+      if (incidentContext) {
+        if (
+          incidentContext.priority === "critical" ||
+          incidentContext.priority === "high"
+        ) {
+          urgencyContext = `[СИТУАЦИЯ КРИТИЧЕСКАЯ! ПРИОРИТЕТ: ${incidentContext.priority.toUpperCase()}! ЭМОЦИИ: ${
+            incidentContext.emotion
+          }. СОКРАТИ ВОПРОСЫ! НУЖЕН ТОЛЬКО АДРЕС И УГРОЗА!]`;
+        } else {
+          urgencyContext = `[Ситуация штатная. Приоритет: ${
+            incidentContext.priority || "обычный"
+          }.]`;
+        }
+
         const known = [];
         if (incidentContext.address)
-          known.push(`адрес: ${incidentContext.address}`);
+          known.push(`АДРЕС ЕСТЬ: ${incidentContext.address}`);
+        else known.push("АДРЕСА НЕТ (спроси срочно!)");
+
         if (incidentContext.category)
           known.push(`тип: ${incidentContext.categoryRu}`);
-        if (incidentContext.victims)
-          known.push(`пострадавшие: ${incidentContext.victims}`);
         if (incidentContext.weapons)
           known.push(`оружие: ${incidentContext.weapons}`);
 
-        if (known.length > 0) {
-          contextMessage = `[Известно: ${known.join(
-            ", "
-          )}]\n\nЗаявитель: ${userMessage}`;
-        }
+        contextMessage = `${urgencyContext}\n[Известно: ${known.join(
+          ", "
+        )}]\n\nЗаявитель: ${userMessage}`;
       }
 
       history.push({ role: "user", content: contextMessage });
@@ -280,8 +295,10 @@ class AIService {
 {
   "priority": "critical|high|medium|low",
   "priorityEmoji": "🔴|🟠|🟡|🟢",
-  "category": "убийство|грабеж|дтп|бытовой_конфликт|мошенничество|справочный|другое",
+  "category": "убийство|грабеж|дтп|бытовой_конфликт|мошенничество|справочный|пожар|здоровье|другое",
   "categoryRu": "название на русском",
+  "dispatchTo": "police|ambulance|mchs|gas|district|info",
+  "dispatchToRu": "Полиция|Скорая|МЧС|Газ|Участковый|Справочная",
   "emotion": "паника|агрессия|шок|страх|спокойствие",
   "emotionEmoji": "😱|😡|😨|😰|😐",
   "threatLevel": "высокая|средняя|низкая|нет",
@@ -292,6 +309,14 @@ class AIService {
   "vehicles": "описание ТС или null",
   "needsClarification": ["что нужно уточнить"]
 }
+
+Логика распределения служб (dispatchTo):
+- Насилие, оружие, криминал, ДТП без жертв -> police
+- Ранение, болезнь, ДТП с жертвами -> ambulance
+- Пожар, задымление, спасение -> mchs
+- Запах газа, взрыв -> gas
+- Шум, соседи, семейные соры (без оружия) -> district
+- Вопросы, консультация -> info
 
 Если данных нет - ставь null. Всегда возвращай валидный JSON.`,
           },

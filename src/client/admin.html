@@ -138,7 +138,19 @@
 
               <div class="card incident-info">
                 <h3>Данные инцидента (CAD)</h3>
-                <div id="incidentDataContent" class="json-view">
+                <div class="info-row">
+                  <span class="label">Приоритет:</span>
+                  <span class="value" id="incidentPriority">-</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Служба:</span>
+                  <span class="value" id="incidentService">-</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Тип:</span>
+                  <span class="value" id="incidentType">-</span>
+                </div>
+                <div id="incidentDataContent" class="json-view hidden">
                   <p class="no-data">Нет данных</p>
                 </div>
               </div>

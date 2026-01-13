@@ -229,12 +229,29 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("callerLocation").textContent = locStr;
 
     // Incident Data
-    const incidentDiv = document.getElementById("incidentDataContent");
     if (data.incidentData) {
+      const inc = data.incidentData;
+
+      const priorityEl = document.getElementById("incidentPriority");
+      priorityEl.textContent = `${inc.priorityEmoji || ""} ${
+        inc.priority ? inc.priority.toUpperCase() : "-"
+      }`;
+      if (inc.priority === "critical") priorityEl.style.color = "var(--danger)";
+      else if (inc.priority === "high")
+        priorityEl.style.color = "var(--warning)";
+
+      document.getElementById("incidentService").textContent =
+        inc.dispatchToRu || inc.dispatchTo || "-";
+      document.getElementById("incidentType").textContent =
+        inc.categoryRu || inc.category || "-";
+
+      // Keep raw JSON hidden but populated just in case
+      const incidentDiv = document.getElementById("incidentDataContent");
       incidentDiv.textContent = JSON.stringify(data.incidentData, null, 2);
-      incidentDiv.classList.remove("no-data");
     } else {
-      incidentDiv.innerHTML = '<p class="no-data">Нет данных</p>';
+      document.getElementById("incidentPriority").textContent = "-";
+      document.getElementById("incidentService").textContent = "-";
+      document.getElementById("incidentType").textContent = "-";
     }
 
     // Audio
