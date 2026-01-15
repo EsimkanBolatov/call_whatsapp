@@ -1,180 +1,237 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Админ панель - Просмотр разговоров</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="admin.css" />
-  </head>
-  <body>
-    <div class="app-container">
-      <aside class="sidebar">
-        <header class="sidebar-header">
-          <h1>
-            <a
-              href="/"
-              style="
-                text-decoration: none;
-                color: inherit;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
-            >
-              <span style="font-size: 1.5rem">🚨</span> NG911 Panel
-            </a>
-          </h1>
-          <div class="search-box">
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="🔍 Поиск по ID или дате..."
-            />
-          </div>
-          <div class="filters-container">
-            <button class="filter-btn active" data-filter="all">Все</button>
-            <button class="filter-btn" data-filter="police">Полиция</button>
-            <button class="filter-btn" data-filter="patrol">Патруль</button>
-            <button class="filter-btn" data-filter="traffic">ДПС</button>
-            <button class="filter-btn" data-filter="info">Справочная</button>
-          </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jedel Admin | Центр Мониторинга</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --border: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary: #6366f1;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 2rem;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .refresh-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .refresh-btn:hover { opacity: 0.9; }
+
+        .grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+
+        /* Карточка звонка */
+        .call-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .call-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .meta-info { display: flex; flex-direction: column; gap: 0.25rem; }
+        .call-id { font-family: monospace; color: var(--text-secondary); font-size: 0.8rem; }
+        .call-time { font-weight: 500; font-size: 1.1rem; }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .status-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .status-medium { background: rgba(99, 102, 241, 0.2); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.3); }
+        .status-low { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        .cad-info {
+            padding: 1rem 1.5rem;
+            background: rgba(0,0,0,0.2);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .cad-item label { display: block; color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 0.25rem; }
+        .cad-item span { font-weight: 500; }
+
+        .transcript-section { padding: 0; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 0.75rem 1.5rem; color: var(--text-secondary); font-weight: 500; background: rgba(255,255,255,0.02); }
+        td { padding: 0.75rem 1.5rem; border-top: 1px solid var(--border); vertical-align: middle; }
+
+        .role-user { color: var(--primary); font-weight: 600; width: 100px; }
+        .role-ai { color: var(--success); font-weight: 600; width: 100px; }
+        
+        .text-cell { line-height: 1.5; max-width: 600px; }
+        
+        audio { height: 32px; width: 220px; border-radius: 4px; }
+        
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-secondary); font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚔 Jedel Monitoring <span style="font-size:0.8rem; font-weight:400; color: #64748b; margin-left:10px;">Live Feed</span></h1>
+            <button class="refresh-btn" onclick="loadCalls()">🔄 Обновить список</button>
         </header>
-        <div class="conversation-list" id="conversationList">
-          <!-- List items will be injected here -->
-          <div class="loading">Загрузка...</div>
+
+        <div id="callsList" class="grid">
+            <div class="empty-state">Загрузка данных...</div>
         </div>
-      </aside>
-
-      <main class="main-content">
-        <div id="emptyState" class="empty-state">
-          <div class="empty-state-content">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="feather feather-message-square"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              ></path>
-            </svg>
-            <h2>Выберите разговор</h2>
-            <p>
-              Выберите разговор из списка слева, чтобы посмотреть детали и
-              транскрипцию.
-            </p>
-          </div>
-        </div>
-
-        <div id="conversationDetail" class="conversation-detail hidden">
-          <header class="detail-header">
-            <div class="header-info">
-              <h2 id="detailSessionId">Session ID</h2>
-              <div class="meta-tags">
-                <span class="tag date" id="detailDate">Date</span>
-                <span class="tag time" id="detailTime">Time</span>
-                <span class="tag duration" id="detailDuration">Duration</span>
-              </div>
-            </div>
-            <div class="header-actions">
-              <button id="refreshBtn" class="btn icon-btn" title="Обновить">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path
-                    d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
-                  ></path>
-                </svg>
-              </button>
-            </div>
-          </header>
-
-          <div class="detail-grid">
-            <div class="chat-section">
-              <div class="section-title">Транскрипция</div>
-              <div class="chat-container" id="chatContainer">
-                <!-- Chat messages go here -->
-              </div>
-            </div>
-
-            <div class="info-section">
-              <div class="card caller-info">
-                <h3>Информация о вызывающем</h3>
-                <div class="info-row">
-                  <span class="label">IP Адрес:</span>
-                  <span class="value" id="callerIp">-</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">Устройство:</span>
-                  <span class="value" id="callerDevice">-</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">Геолокация:</span>
-                  <span class="value" id="callerLocation">-</span>
-                </div>
-              </div>
-
-              <div class="card incident-info">
-                <h3>Данные инцидента (CAD)</h3>
-                <div class="info-row">
-                  <span class="label">Приоритет:</span>
-                  <span class="value" id="incidentPriority">-</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">Служба:</span>
-                  <span class="value" id="incidentService">-</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">Тип:</span>
-                  <span class="value" id="incidentType">-</span>
-                </div>
-                <div id="incidentDataContent" class="json-view hidden">
-                  <p class="no-data">Нет данных</p>
-                </div>
-              </div>
-
-              <div class="card recordings-info">
-                <h3>Аудиозаписи</h3>
-                <div class="audio-player-wrapper" id="userAudioWrapper">
-                  <span class="audio-label">Заявитель</span>
-                  <audio controls id="userAudioInfo"></audio>
-                  <p id="noUserAudio" class="no-audio-text hidden">
-                    Нет записи
-                  </p>
-                </div>
-                <div class="audio-player-wrapper" id="aiAudioWrapper">
-                  <span class="audio-label">AI Ассистент</span>
-                  <audio controls id="aiAudioInfo"></audio>
-                  <p id="noAiAudio" class="no-audio-text hidden">Нет записи</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
     </div>
-    <script src="admin.js"></script>
-  </body>
+
+    <script>
+        async function loadCalls() {
+            const container = document.getElementById('callsList');
+            
+            try {
+                const res = await fetch('/api/conversations');
+                if (!res.ok) throw new Error("API Error");
+                
+                const calls = await res.json();
+                
+                if (calls.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Нет активных или архивных звонков.</div>';
+                    return;
+                }
+
+                container.innerHTML = ''; // Очистка перед рендером
+
+                calls.forEach(call => {
+                    const incident = call.incident || {};
+                    const priority = incident.priority || 'medium';
+                    const dateObj = new Date(call.startTime);
+                    const timeString = dateObj.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    const dateString = dateObj.toLocaleDateString('ru-RU');
+
+                    // Генерация строк таблицы транскрипции
+                    let transcriptRows = '';
+                    if (call.transcript && call.transcript.length > 0) {
+                        transcriptRows = call.transcript.map(t => `
+                            <tr>
+                                <td class="${t.role === 'user' ? 'role-user' : 'role-ai'}">
+                                    ${t.role === 'user' ? 'ЗАЯВИТЕЛЬ' : 'AI ДИСПЕТЧЕР'}
+                                </td>
+                                <td class="text-cell">${t.text || '...'}</td>
+                                <td>
+                                    ${t.audioUrl ? `<audio controls preload="none" src="${t.audioUrl}"></audio>` : '<span style="color:#64748b; font-size:0.8rem;">Нет аудио</span>'}
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        transcriptRows = '<tr><td colspan="3" style="text-align:center; color:#64748b; padding: 1rem;">Запись разговора отсутствует</td></tr>';
+                    }
+
+                    const html = `
+                        <div class="call-card">
+                            <div class="call-header">
+                                <div class="meta-info">
+                                    <div class="call-time">${timeString} <span style="font-size:0.9rem; color:#64748b">(${dateString})</span></div>
+                                    <div class="call-id">ID: ${call.sessionId}</div>
+                                </div>
+                                <div class="status-badge status-${priority}">
+                                    ${incident.priorityEmoji || ''} ${priority.toUpperCase()}
+                                </div>
+                            </div>
+                            
+                            <div class="cad-info">
+                                <div class="cad-item">
+                                    <label>Категория</label>
+                                    <span>${incident.categoryRu || 'Не определено'}</span>
+                                </div>
+                                <div class="cad-item">
+                                    <label>Адрес</label>
+                                    <span>${incident.address || '—'}</span>
+                                </div>
+                                <div class="cad-item">
+                                    <label>Эмоции</label>
+                                    <span>${incident.emotion || '—'} ${incident.emotionEmoji || ''}</span>
+                                </div>
+                                <div class="cad-item">
+                                    <label>Фабула (ЕРДР)</label>
+                                    <span style="font-size: 0.85rem; color: #cbd5e1;">${incident.erdr_description || 'Нет данных'}</span>
+                                </div>
+                            </div>
+
+                            <div class="transcript-section">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th width="15%">Источник</th>
+                                            <th width="55%">Текст</th>
+                                            <th width="30%">Аудиозапись</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${transcriptRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="empty-state" style="color: #ef4444">Ошибка подключения к серверу</div>';
+            }
+        }
+
+        // Первичная загрузка
+        loadCalls();
+
+        // Автообновление каждые 5 секунд (чтобы видеть новые фразы в реальном времени)
+        setInterval(loadCalls, 5000);
+    </script>
+</body>
 </html>
