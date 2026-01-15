@@ -79,9 +79,15 @@ io.on("connection", (socket) => {
   });
 
   // 2. Получение аудио от клиента
+  // 2. Получение аудио от клиента
   socket.on("audio-chunk", async ({ audioData, sessionId }) => {
     // Проверка безопасности: обрабатываем только текущую сессию
-    if (!sessionId || sessionId !== currentSessionId) return;
+    if (!sessionId || sessionId !== currentSessionId) {
+        console.warn(`⚠️ Игнорирую аудио. Сессия клиента: ${sessionId}, Сессия сервера: ${currentSessionId}`);
+        // Можно отправить команду клиенту на перезагрузку, если хотите
+        socket.emit("ai-error", { message: "Сессия устарела. Обновите страницу." });
+        return;
+    }
 
     try {
       console.log(`🔄 Processing audio for session: ${sessionId}`);
