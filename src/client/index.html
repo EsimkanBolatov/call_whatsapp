@@ -710,6 +710,7 @@
       }
 
       async function stopRecordingAndSend() {
+        console.log("🛑 Stopping recording and preparing to send...");
         isRecording = false;
         isSpeaking = false;
         isProcessing = true;
@@ -721,27 +722,42 @@
         aiAvatar.classList.remove("listening");
         aiAvatar.classList.add("processing");
 
-        // Convert chunks to WAV buffer
-        let totalLength = 0;
-        for (let chunk of audioChunks) totalLength += chunk.length;
-        
-        const audioBuffer = audioContext.createBuffer(1, totalLength, audioContext.sampleRate);
-        const channelData = audioBuffer.getChannelData(0);
-        let offset = 0;
-        for (let chunk of audioChunks) {
-            channelData.set(chunk, offset);
-            offset += chunk.length;
+        try {
+            // Convert chunks to WAV buffer
+            let totalLength = 0;
+            for (let chunk of audioChunks) totalLength += chunk.length;
+            
+            if (totalLength === 0) {
+                console.warn("⚠️ No audio data recorded.");
+                isProcessing = false;
+                updateStatus("🎙️ Слушаю...", "listening");
+                return;
+            }
+
+            const audioBuffer = audioContext.createBuffer(1, totalLength, audioContext.sampleRate);
+            const channelData = audioBuffer.getChannelData(0);
+            let offset = 0;
+            for (let chunk of audioChunks) {
+                channelData.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            // WAV Encoding
+            const wavBlob = audioBufferToWav(audioBuffer);
+            const base64 = await blobToBase64(wavBlob);
+
+            console.log(`📤 Emitting audio-chunk. Size: ${base64.length} chars. Session: ${sessionId}`);
+            
+            // SEND CORRECT FORMAT
+            socket.emit("audio-chunk", {
+                audioData: base64, // Correct key expected by server
+                sessionId: sessionId
+            });
+        } catch (err) {
+            console.error("❌ Error in stopRecordingAndSend:", err);
+            updateStatus("Ошибка обработки аудио", "");
+            isProcessing = false;
         }
-
-        // WAV Encoding
-        const wavBlob = audioBufferToWav(audioBuffer);
-        const base64 = await blobToBase64(wavBlob);
-
-        // SEND CORRECT FORMAT
-        socket.emit("audio-chunk", {
-            audioData: base64, // Correct key expected by server
-            sessionId: sessionId
-        });
         
         audioChunks = [];
       }
@@ -800,6 +816,7 @@
 
       // Server Responses
       socket.on("ai-response", (data) => {
+        console.log("📥 Received AI response");
         isProcessing = false;
         aiAvatar.classList.remove("processing");
         aiAvatar.classList.add("active");
@@ -823,11 +840,11 @@
       });
 
       socket.on("ai-error", (data) => {
+        console.error("❌ AI Error received:", data);
         isProcessing = false;
         aiAvatar.classList.remove("processing");
         aiAvatar.classList.add("active");
         updateStatus("❌ Ошибка AI", "");
-        console.error(data);
       });
 
       // Cleanup

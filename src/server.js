@@ -15,7 +15,8 @@ const io = new Server(server, {
   cors: {
     origin: "*",
   },
-  maxHttpBufferSize: 10e6, // 10MB
+  maxHttpBufferSize: 1e8, // Увеличил лимит до 100MB для надежности
+  pingTimeout: 60000, // Увеличил таймаут
 });
 
 const aiService = new AIService();
@@ -54,18 +55,28 @@ io.on("connection", (socket) => {
   });
 
   socket.on("audio-chunk", async (data) => {
+    console.log(`📨 Received audio-chunk event for session: ${data?.sessionId}`);
+    
     // ВАЖНО: Деструктурируем именно audioData
     const { audioData, sessionId } = data;
 
     if (!audioData) {
-      console.error("Received audio-chunk but audioData is missing!");
+      console.error("❌ ERROR: Received audio-chunk but audioData is MISSING or empty!");
       socket.emit("ai-error", { error: "No audio data received" });
       return;
     }
 
+    if (!sessionId) {
+      console.error("❌ ERROR: Received audio-chunk but sessionId is MISSING!");
+      return;
+    }
+
     try {
+      console.log(`🔄 Processing audio data size: ${audioData.length} bytes`);
+
       // Decode Base64 to Buffer
       const audioBuffer = Buffer.from(audioData, "base64");
+      console.log(`📁 Converted to Buffer: ${audioBuffer.length} bytes`);
 
       // Save chunk
       recordingService.addAudioChunk(sessionId, audioBuffer, "user");
@@ -88,9 +99,10 @@ io.on("connection", (socket) => {
         audio: result.audio.toString("base64"), // Send back as Base64
         incident: result.incident,
       });
+      console.log(`✅ AI Response sent for session: ${sessionId}`);
 
     } catch (error) {
-      console.error("Processing error:", error);
+      console.error("❌ Processing error in server:", error);
       socket.emit("ai-error", { error: "Processing failed", details: error.message });
     }
   });
