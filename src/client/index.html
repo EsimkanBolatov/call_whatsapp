@@ -7,17 +7,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --primary: #0056b3;
-        --danger: #dc3545;
-        --bg: #ffffff;
-        --text: #333333;
-        --gray: #f8f9fa;
-        --border: #dee2e6;
+        --primary: #3b82f6;
+        --danger: #ef4444;
+        --bg: #0f172a;
+        --text: #f1f5f9;
+        --gray: #1e293b;
+        --border: #334155;
+        --card-bg: #1e293b;
+        --hover: #334155;
       }
 
       * {
@@ -27,7 +29,7 @@
       }
 
       body {
-        font-family: "Roboto", sans-serif;
+        font-family: "Inter", sans-serif;
         background: var(--bg);
         color: var(--text);
         height: 100vh;
@@ -223,12 +225,14 @@
       let noiseFloorSamples = [];
       let consecutiveSpeechFrames = 0;
       const SPEECH_CONFIRM_FRAMES = 3;
+      const MAX_SPEECH_DURATION = 10000; // 10 seconds maximum recording
 
       let isListening = false;
       let isRecording = false;
       let isSpeaking = false;
       let isProcessing = false;
       let silenceTimer = null;
+      let maxDurationTimer = null;
       let speechStartTime = null;
       let isAiSpeaking = false;
 
@@ -300,6 +304,50 @@
         analyser.smoothingTimeConstant = 0.3;
         source.connect(analyser);
 
+        // Load AudioWorklet processor
+        audioContext.audioWorklet.addModule('audio-processor.js').then(() => {
+          console.log('[Main] AudioWorklet module loaded successfully');
+          // Create AudioWorkletNode for recording
+          processor = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
+          console.log('[Main] AudioWorkletNode created');
+
+          // Handle messages from AudioWorklet
+          processor.port.onmessage = (event) => {
+            if (event.data.type === 'audioChunk' && isRecording) {
+              // Add chunk to our audioChunks array for sending to server
+              audioChunks.push(new Float32Array(event.data.chunk));
+            } else if (event.data.type === 'audioData' && isRecording) {
+              // Fallback: add all chunks at once (for stop recording)
+              event.data.chunks.forEach(chunk => {
+                audioChunks.push(new Float32Array(chunk));
+              });
+            }
+          };
+
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+
+          isListening = true;
+          statusEl.innerText = "Слушаю...";
+          statusEl.classList.add("listening");
+          aiAvatar.innerText = "👂";
+
+          setTimeout(() => {
+            statusEl.innerText = "Говорите...";
+          }, 1000);
+
+          detectVoiceActivity();
+        }).catch(error => {
+          console.error('[Main] Failed to load AudioWorklet:', error);
+          // Fallback to old method if AudioWorklet fails
+          fallbackToScriptProcessor(source, analyser);
+        });
+      }
+
+      // Fallback function for older browsers or if AudioWorklet fails
+      function fallbackToScriptProcessor(source, analyser) {
+        console.log('[Main] Using fallback ScriptProcessorNode');
+        // Processor for recording
         processor = audioContext.createScriptProcessor(2048, 1, 1);
         processor.onaudioprocess = (e) => {
           if (isRecording) {
@@ -401,6 +449,18 @@
         isSpeaking = true;
         speechStartTime = Date.now();
         console.log("Started recording");
+
+        // Send message to AudioWorklet to start recording
+        if (processor && processor.port) {
+          processor.port.postMessage({ type: 'startRecording' });
+        }
+
+        // Set maximum recording duration timer
+        maxDurationTimer = setTimeout(() => {
+          console.log("Maximum recording duration reached");
+          stopRecordingAndSend();
+        }, MAX_SPEECH_DURATION);
+
         // Visual feedback
         aiAvatar.innerText = "🎤";
       }
@@ -412,6 +472,13 @@
         consecutiveSpeechFrames = 0;
         clearTimeout(silenceTimer);
         silenceTimer = null;
+        clearTimeout(maxDurationTimer);
+        maxDurationTimer = null;
+
+        // Send message to AudioWorklet to stop recording
+        if (processor && processor.port) {
+          processor.port.postMessage({ type: 'stopRecording' });
+        }
 
         statusEl.innerText = "Обработка...";
         statusEl.classList.remove("listening");
