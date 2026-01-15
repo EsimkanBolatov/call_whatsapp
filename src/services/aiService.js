@@ -7,26 +7,27 @@ class AIService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    this.conversationHistory = new Map(); // For analyst (CAD)
-    this.dispatcherHistory = new Map(); // For dispatcher (voice)
-    this.incidentData = new Map(); // Accumulated CAD data per session
+    this.conversationHistory = new Map(); // История для аналитика (CAD)
+    this.dispatcherHistory = new Map(); // История для диспетчера (голос)
+    this.incidentData = new Map(); // Накопленные данные CAD по сессиям
   }
 
   /**
-   * Convert audio buffer to text using OpenAI Whisper
-   * @param {Buffer} audioBuffer - Audio data in WAV format
-   * @param {string} sessionId - Session identifier
-   * @returns {Promise<string>} Transcribed text
+   * Конвертация аудио в текст с помощью OpenAI Whisper
+   * @param {Buffer} audioBuffer - Аудио данные (WAV)
+   * @param {string} sessionId - ID сессии
+   * @returns {Promise<string>} Текст транскрипции
    */
   async speechToText(audioBuffer, sessionId) {
-    // Generate unique file name to avoid race conditions
+    console.log(`[DEBUG] Starting speechToText for session ${sessionId}`);
+    // Генерируем уникальное имя файла, чтобы избежать конфликтов
     const uniqueId = `${sessionId}_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
     const tempPath = path.join(__dirname, `../../temp/${uniqueId}.wav`);
 
     try {
-      // Ensure temp directory exists
+      // Убедимся, что папка temp существует
       const tempDir = path.dirname(tempPath);
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
@@ -43,8 +44,14 @@ class AIService {
         model: "whisper-1",
         language: "ru",
       });
+      console.log(
+        `[DEBUG] Transcription complete: ${transcription.text.substring(
+          0,
+          50
+        )}...`
+      );
 
-      // Clean up temp file safely
+      // Безопасное удаление временного файла
       try {
         if (fs.existsSync(tempPath)) {
           fs.unlinkSync(tempPath);
@@ -55,13 +62,13 @@ class AIService {
 
       return transcription.text;
     } catch (error) {
-      // Clean up on error too
+      // Очистка при ошибке
       try {
         if (fs.existsSync(tempPath)) {
           fs.unlinkSync(tempPath);
         }
       } catch (unlinkError) {
-        // Ignore cleanup errors
+        // Игнорируем ошибки удаления
       }
       console.error("Speech-to-Text error:", error);
       throw error;
@@ -69,54 +76,18 @@ class AIService {
   }
 
   /**
-   * Generate AI response using GPT
-   * @param {string} userMessage - User's message
-   * @param {string} sessionId - Session identifier for conversation history
-   * @returns {Promise<string>} AI response text
+   * Генерация ответа ИИ (стандартный чат, редко используется в voice-режиме напрямую)
    */
   async generateResponse(userMessage, sessionId) {
     try {
-      // Get or initialize conversation history
       if (!this.conversationHistory.has(sessionId)) {
         this.conversationHistory.set(sessionId, [
           {
             role: "system",
             content: `Роль: Интеллектуальный аналитик и помощник диспетчера экстренных служб (Co-Pilot)
-
 Ты — невидимый интеллектуальный помощник диспетчера экстренных служб полиции.
 Ты НЕ заменяешь оператора, не принимаешь юридически значимых решений.
-Твоя задача — анализировать входящие данные, формировать подсказки оператору, автоматически заполнять карточку происшествия.
-
-ОСНОВНЫЕ ФУНКЦИИ:
-
-1. АНАЛИЗ РАЗГОВОРА:
-- Кратко резюмируй суть обращения (1–2 предложения)
-- Определи: тип происшествия, срочность, угрозу жизни
-- Выдели: адрес, количество участников, оружие, приметы
-
-2. ДЕТЕКЦИЯ ЭМОЦИЙ:
-- Определяй: паника, агрессия, шок, спокойствие
-- При повышении риска — помечай как КРИТИЧЕСКИЙ
-
-3. КЛАССИФИКАЦИЯ (Smart-Triage):
-Категории: Убийство, Грабеж, ДТП, Бытовой конфликт, Мошенничество, Справочный
-Приоритет: 🔴 Критический | 🟠 Высокий | 🟡 Средний | 🟢 Низкий
-
-4. АВТОЗАПОЛНЕНИЕ КАРТОЧКИ (CAD):
-Адрес | Тип | Описание | Участники | Подозреваемый | Транспорт | Оружие | Пострадавшие
-
-ФОРМАТ ОТВЕТА (кратко, структурировано):
-📋 Резюме: [суть за 1-2 предложения]
-🚨 Категория: [тип] | Приоритет: [🔴/🟠/🟡/🟢]
-😰 Эмоции: [состояние заявителя]
-📍 Данные: [адрес, приметы, важные факты]
-💡 Рекомендация: [что уточнить / действие]
-
-ПРИНЦИПЫ:
-- Отвечай КРАТКО (будет озвучено)
-- Официальный служебный язык
-- Никогда не перегружай информацией
-- Приоритет: сохранение жизни → скорость → точность`,
+Твоя задача — анализировать входящие данные, формировать подсказки оператору, автоматически заполнять карточку происшествия.`,
           },
         ]);
       }
@@ -127,14 +98,14 @@ class AIService {
       const completion = await this.openai.chat.completions.create({
         model: process.env.AI_MODEL || "gpt-4o-mini",
         messages: history,
-        max_tokens: 300, // Increased for structured response
-        temperature: 0.3, // Lower for more consistent responses
+        max_tokens: 300,
+        temperature: 0.3,
       });
 
       const aiResponse = completion.choices[0].message.content;
       history.push({ role: "assistant", content: aiResponse });
 
-      // Keep only last 20 messages to manage context size
+      // Ограничиваем историю
       if (history.length > 22) {
         const systemMessage = history[0];
         this.conversationHistory.set(sessionId, [
@@ -151,19 +122,19 @@ class AIService {
   }
 
   /**
-   * Generate dispatcher response (voice) - talks like a real 911 operator
-   * @param {string} userMessage - Caller's message
-   * @param {string} sessionId - Session identifier
-   * @param {object} incidentContext - Current incident data for context
-   * @returns {Promise<string>} Dispatcher response text
+   * Генерация ответа диспетчера (голос)
+   * @param {string} userMessage - Сообщение звонящего
+   * @param {string} sessionId - ID сессии
+   * @param {object} incidentContext - Текущие данные инцидента
+   * @returns {Promise<string>} Текст ответа диспетчера
    */
   async generateDispatcherResponse(
     userMessage,
     sessionId,
     incidentContext = null
   ) {
+    console.log(`[DEBUG] Generating dispatcher response`);
     try {
-      // Get or initialize dispatcher history
       if (!this.dispatcherHistory.has(sessionId)) {
         this.dispatcherHistory.set(sessionId, [
           {
@@ -174,11 +145,11 @@ class AIService {
 ПРИНЦИПЫ:
 1.  **ПРИОРИТЕТ ЖИЗНИ**: Если угроза жизни, оружие или насилие — СРАЗУ отправляй наряд. Не задавай лишних вопросов.
 2.  **АДАПТИВНОСТЬ**:
-    *   **CRITICAL / HIGH** (Убийство, нападение, ДТП с жертвами):
+    * **CRITICAL / HIGH** (Убийство, нападение, ДТП с жертвами):
         - Спрашивай ТОЛЬКО: "ГДЕ?" и "ЕСТЬ ЛИ ОРУЖИЕ/УГРОЗА?"
         - Сразу говори: "Наряд выехал. Оставайтесь на линии."
         - НЕ спрашивай подробности или ФИО, пока помощь не направлена.
-    *   **MEDIUM / LOW** (Шум, кража, справочная):
+    * **MEDIUM / LOW** (Шум, кража, справочная):
         - Действуй по протоколу: Что случилось? Где? Кто звонит? Детали.
         - Будь вежлив, но краток.
 
@@ -187,6 +158,10 @@ class AIService {
     - Успокаивай паникеров ("Помощь уже едет, я с вами").
     - Четкие команды ("Говорите адрес", "Отойдите в безопасное место").
 
+4. **СБОР ДАННЫХ**:
+    - Обязательно узнай **Имя и Фамилию** заявителя, если ситуация позволяет (нет прямой угрозы жизни).
+    - Формат вопроса: "Назовите вашу фамилию и имя."
+
 НЕ ДЕЛАЙ: не зачитывай резюме, не говори сложно, не молчи.`,
           },
         ]);
@@ -194,11 +169,10 @@ class AIService {
 
       const history = this.dispatcherHistory.get(sessionId);
 
-      // Add context about what we already know AND the analysis context
+      // Добавляем контекст из того, что уже известно (CAD)
       let contextMessage = userMessage;
-
-      // Determine urgency context from incident data
       let urgencyContext = "";
+
       if (incidentContext) {
         if (
           incidentContext.priority === "critical" ||
@@ -233,14 +207,14 @@ class AIService {
       const completion = await this.openai.chat.completions.create({
         model: process.env.AI_MODEL || "gpt-4o-mini",
         messages: history,
-        max_tokens: 100, // Very short for quick voice response
+        max_tokens: 100, // Очень короткий ответ для скорости
         temperature: 0.5,
       });
 
       const response = completion.choices[0].message.content;
       history.push({ role: "assistant", content: response });
 
-      // Keep only last 20 messages
+      // Ограничиваем историю 20 сообщениями
       if (history.length > 22) {
         const systemMessage = history[0];
         this.dispatcherHistory.set(sessionId, [
@@ -257,11 +231,14 @@ class AIService {
   }
 
   /**
-   * Convert text to speech using OpenAI TTS
-   * @param {string} text - Text to convert to speech
-   * @returns {Promise<Buffer>} Audio buffer in mp3 format
+   * Конвертация текста в речь (OpenAI TTS)
+   * @param {string} text - Текст
+   * @returns {Promise<Buffer>} MP3 буфер
    */
   async textToSpeech(text) {
+    console.log(
+      `[DEBUG] Starting textToSpeech for: ${text.substring(0, 50)}...`
+    );
     try {
       const mp3 = await this.openai.audio.speech.create({
         model: "tts-1",
@@ -279,18 +256,22 @@ class AIService {
   }
 
   /**
-   * Analyze incident from caller's speech
-   * @param {string} text - Caller's speech text
-   * @returns {Promise<object>} Incident analysis
+   * Анализ инцидента (Smart-Triage & CAD)
+   * @param {string} text - Текст заявителя
+   * @returns {Promise<object>} Анализ в формате JSON
    */
   async analyzeIncident(text) {
+    console.log(
+      `[DEBUG] Analyzing incident for text: ${text.substring(0, 50)}...`
+    );
     try {
       const completion = await this.openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `Ты анализатор экстренных вызовов. Проанализируй текст заявителя и верни ТОЛЬКО JSON:
+            content: `Ты анализатор экстренных вызовов для полиции Казахстана. Проанализируй текст заявителя и верни ТОЛЬКО JSON.
+            Твоя задача — не только классифицировать, но и подготовить данные для официальной регистрации в ЕРДР (Единый реестр досудебных расследований).
 
 {
   "priority": "critical|high|medium|low",
@@ -302,12 +283,18 @@ class AIService {
   "emotion": "паника|агрессия|шок|страх|спокойствие",
   "emotionEmoji": "😱|😡|😨|😰|😐",
   "threatLevel": "высокая|средняя|низкая|нет",
-  "address": "адрес если упомянут или null",
+  "address": "полный адрес происшествия или null",
   "weapons": "описание оружия или null",
   "victims": "число пострадавших или null",
   "suspects": "описание подозреваемых или null",
   "vehicles": "описание ТС или null",
-  "needsClarification": ["что нужно уточнить"]
+  "callerName": "имя фамилия заявителя или null",
+  "needsClarification": ["что нужно уточнить"],
+
+  "erdr_category": "Квалификация для ЕРДР (Поле 5.1). Например: 'против собственности', 'против личности', 'мошенничество'",
+  "erdr_recipient": "Для кого обращение? (Поле 5.2). Обычно: 'Начальнику УП района...'",
+  "erdr_district": "Район города (если можно определить из адреса). Например: 'Алмалинский район'",
+  "erdr_description": "Официальная фабула происшествия для ЕРДР. Кратко, сухо, по факту (3-4 предложения). Пример: '13.01.2026 в 18:30 неизвестное лицо тайно похитило кошелек...'"
 }
 
 Логика распределения служб (dispatchTo):
@@ -328,7 +315,7 @@ class AIService {
 
       const responseText = completion.choices[0].message.content.trim();
 
-      // Parse JSON response
+      // Парсинг JSON
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -338,6 +325,7 @@ class AIService {
         }
       }
 
+      // Fallback
       return {
         priority: "medium",
         priorityEmoji: "🟡",
@@ -351,10 +339,12 @@ class AIService {
         victims: null,
         suspects: null,
         vehicles: null,
+        callerName: null,
         needsClarification: ["Уточните суть обращения"],
       };
     } catch (error) {
       console.error("Incident analysis error:", error);
+      // Возвращаем пустую структуру при ошибке API
       return {
         priority: "medium",
         priorityEmoji: "🟡",
@@ -368,32 +358,41 @@ class AIService {
         victims: null,
         suspects: null,
         vehicles: null,
+        callerName: null,
         needsClarification: [],
       };
     }
   }
 
   /**
-   * Merge new incident data with accumulated data
-   * @param {string} sessionId
-   * @param {object} newData - New incident analysis
-   * @returns {object} Merged incident data
+   * Слияние новых данных инцидента с накопленными
    */
   mergeIncidentData(sessionId, newData) {
     let accumulated = this.incidentData.get(sessionId) || {};
-
-    // Merge - newer non-null values override
     const merged = { ...accumulated };
+
+    // Приоритеты служб (выше = важнее)
+    const servicePriority = {
+      police: 10,
+      ambulance: 10,
+      mchs: 10,
+      gas: 10,
+      district: 5,
+      info: 1,
+      other: 0,
+      null: -1,
+    };
+
+    const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
 
     for (const [key, value] of Object.entries(newData)) {
       if (value !== null && value !== undefined) {
-        // For needsClarification, accumulate unique items
+        // Объединяем списки уточнений
         if (key === "needsClarification" && Array.isArray(value)) {
           merged[key] = [...new Set([...(accumulated[key] || []), ...value])];
         }
-        // For priority, keep the highest
+        // Обновляем приоритет только на более высокий
         else if (key === "priority") {
-          const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
           if (
             !accumulated[key] ||
             priorities[value] > priorities[accumulated[key]]
@@ -401,8 +400,41 @@ class AIService {
             merged[key] = value;
             merged.priorityEmoji = newData.priorityEmoji;
           }
-        } else {
-          merged[key] = value;
+        }
+        // Выбираем службу с наивысшим приоритетом
+        else if (key === "dispatchTo") {
+          const distinctOld = accumulated[key] || "null";
+          const distinctNew = value || "null";
+          const oldScore = servicePriority[distinctOld] || 0;
+          const newScore = servicePriority[distinctNew] || 0;
+
+          if (newScore >= oldScore) {
+            merged[key] = value;
+            if (newData.dispatchToRu)
+              merged.dispatchToRu = newData.dispatchToRu;
+          }
+        }
+        // Категорию "другое" или "справка" не ставим поверх уже определенной конкретики
+        else if (key === "category") {
+          const oldCat = accumulated[key];
+          const isNewGeneric = ["другое", "справочный"].includes(value);
+
+          if (!oldCat || !isNewGeneric) {
+            merged[key] = value;
+            if (newData.categoryRu) merged.categoryRu = newData.categoryRu;
+          }
+        }
+        // Имя заявителя не затираем null-ом
+        else if (key === "callerName") {
+          if (value) {
+            merged[key] = value;
+          }
+        }
+        // Остальные поля просто обновляем
+        else {
+          if (key !== "dispatchToRu" && key !== "categoryRu") {
+            merged[key] = value;
+          }
         }
       }
     }
@@ -412,29 +444,23 @@ class AIService {
   }
 
   /**
-   * Full pipeline: Audio -> Text -> [Analyst + Dispatcher in parallel] -> Audio
-   * Analyst: Updates CAD silently
-   * Dispatcher: Responds with voice
-   * @param {Buffer} audioBuffer - Input audio
-   * @param {string} sessionId - Session ID
-   * @returns {Promise<{text: string, response: string, audio: Buffer, incident: object}>}
+   * Полный пайплайн: Аудио -> Текст -> [Анализ + Диспетчер параллельно] -> Аудио
    */
   async processAudio(audioBuffer, sessionId) {
+    // 1. Распознавание речи (STT)
     const userText = await this.speechToText(audioBuffer, sessionId);
     console.log(`[${sessionId}] 📞 Заявитель: ${userText}`);
 
-    // Get current accumulated incident data for context
+    // Получаем накопленный контекст
     const currentIncident = this.incidentData.get(sessionId) || {};
 
-    // Run BOTH AIs in parallel:
-    // 1. Analyst - analyzes and updates CAD (silent)
-    // 2. Dispatcher - talks to caller (voice)
+    // 2. Параллельный запуск Аналитика и Диспетчера
     const [incidentAnalysis, dispatcherResponse] = await Promise.all([
       this.analyzeIncident(userText),
       this.generateDispatcherResponse(userText, sessionId, currentIncident),
     ]);
 
-    // Merge new analysis with accumulated CAD data
+    // 3. Обновление CAD данных
     const mergedIncident = this.mergeIncidentData(sessionId, incidentAnalysis);
 
     console.log(
@@ -444,30 +470,21 @@ class AIService {
     );
     console.log(`[${sessionId}] 🎙️ Диспетчер: ${dispatcherResponse}`);
 
-    // TTS only for dispatcher response (not the analysis!)
+    // 4. Генерация голоса (TTS) только для ответа диспетчера
     const responseAudio = await this.textToSpeech(dispatcherResponse);
 
     return {
       text: userText,
-      response: dispatcherResponse, // This is what gets spoken
-      audio: responseAudio,
-      incident: mergedIncident, // Accumulated CAD data
+      response: dispatcherResponse, // Текст ответа
+      audio: responseAudio, // Аудио буфер
+      incident: mergedIncident, // Обновленные данные инцидента
     };
   }
 
-  /**
-   * Get accumulated incident data for a session
-   * @param {string} sessionId
-   * @returns {object} Accumulated incident data
-   */
   getIncidentData(sessionId) {
     return this.incidentData.get(sessionId) || {};
   }
 
-  /**
-   * Clear all history for a session
-   * @param {string} sessionId
-   */
   clearHistory(sessionId) {
     this.conversationHistory.delete(sessionId);
     this.dispatcherHistory.delete(sessionId);

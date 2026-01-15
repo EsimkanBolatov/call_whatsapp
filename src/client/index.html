@@ -515,7 +515,11 @@
 
       // Voice Activity Detection settings
       const VAD_THRESHOLD = 0.04; 
-      const SILENCE_DURATION = 1000; 
+      // ИЗМЕНЕНО: уменьшено время тишины для быстрой отправки
+      const SILENCE_DURATION = 600; 
+      // ИЗМЕНЕНО: добавлено максимальное время записи одного чанка (8 секунд)
+      const MAX_RECORDING_DURATION = 8000; 
+
       const MIN_SPEECH_DURATION = 500;
       const NOISE_FLOOR_SAMPLES = 30;
 
@@ -529,6 +533,7 @@
       let isSpeaking = false;
       let isProcessing = false;
       let silenceTimer = null;
+      let maxDurationTimer = null;
       let speechStartTime = null;
       let isAiSpeaking = false;
 
@@ -670,24 +675,20 @@
         } else if (!isCurrentlySpeaking && !isRecording) {
           consecutiveSpeechFrames = 0;
         } else if (isCurrentlySpeaking && isRecording) {
+          // Если пользователь говорит, сбрасываем таймер тишины
           clearTimeout(silenceTimer);
           silenceTimer = null;
           isSpeaking = true;
         } else if (!isCurrentlySpeaking && isRecording && isSpeaking) {
+          // Если пользователь замолчал, запускаем таймер тишины
           if (!silenceTimer) {
             silenceTimer = setTimeout(() => {
               const duration = Date.now() - speechStartTime;
               if (duration >= MIN_SPEECH_DURATION) {
                 stopRecordingAndSend();
               } else {
-                audioChunks = [];
-                isRecording = false;
-                isSpeaking = false;
-                consecutiveSpeechFrames = 0;
-                if(processor) processor.port.postMessage({ type: 'stopRecording' }); // Reset worklet
-                updateStatus("🎙️ Слушаю...", "listening");
-                aiAvatar.classList.add("active");
-                aiAvatar.classList.remove("listening");
+                // Слишком короткая запись (шум)
+                resetRecordingState();
               }
             }, SILENCE_DURATION);
           }
@@ -704,17 +705,41 @@
         
         if (processor) processor.port.postMessage({ type: 'startRecording' });
 
+        // Запускаем таймер максимальной длительности
+        if (maxDurationTimer) clearTimeout(maxDurationTimer);
+        maxDurationTimer = setTimeout(() => {
+             console.log("⏱️ Max recording duration reached, sending...");
+             stopRecordingAndSend();
+        }, MAX_RECORDING_DURATION);
+
         updateStatus("🔴 Запись...", "listening");
         aiAvatar.classList.add("listening");
         aiAvatar.classList.remove("active");
       }
 
+      function resetRecordingState() {
+        audioChunks = [];
+        isRecording = false;
+        isSpeaking = false;
+        consecutiveSpeechFrames = 0;
+        clearTimeout(silenceTimer);
+        clearTimeout(maxDurationTimer); // Сбрасываем таймер макс. длительности
+        if(processor) processor.port.postMessage({ type: 'stopRecording' });
+        updateStatus("🎙️ Слушаю...", "listening");
+        aiAvatar.classList.add("active");
+        aiAvatar.classList.remove("listening");
+      }
+
       async function stopRecordingAndSend() {
         console.log("🛑 Stopping recording and preparing to send...");
+        
+        // Очищаем таймеры
+        clearTimeout(silenceTimer);
+        clearTimeout(maxDurationTimer);
+        
         isRecording = false;
         isSpeaking = false;
         isProcessing = true;
-        clearTimeout(silenceTimer);
         
         if (processor) processor.port.postMessage({ type: 'stopRecording' });
 
@@ -815,7 +840,7 @@
       }
 
       // Server Responses
-      socket.on("ai-response", (data) => {
+socket.on("ai-response", (data) => {
         console.log("📥 Received AI response");
         isProcessing = false;
         aiAvatar.classList.remove("processing");
@@ -833,9 +858,20 @@
         aiAudio.play();
         updateStatus("🔊 Говорит диспетчер...", "active");
 
+        // ОБНОВЛЕНИЕ: Логика завершения
         aiAudio.onended = () => {
             isAiSpeaking = false;
-            if(isListening) updateStatus("🎙️ Слушаю...", "listening");
+            
+            if (data.shouldEndSession) {
+                console.log("🛑 Server requested to end session.");
+                updateStatus("✅ Вызов обработан. Отключение...", "active");
+                // Небольшая задержка перед сбросом
+                setTimeout(() => {
+                    hangupBtn.click();
+                }, 1000);
+            } else {
+                if(isListening) updateStatus("🎙️ Слушаю...", "listening");
+            }
         };
       });
 
