@@ -15,185 +15,101 @@ const io = new Server(server, {
   cors: {
     origin: "*",
   },
-  maxHttpBufferSize: 10e6, // 10MB for audio chunks
+  maxHttpBufferSize: 10e6, // 10MB
 });
 
-// Initialize services
 const aiService = new AIService();
 const recordingService = new RecordingService();
 
-// Serve static files
+// Static files
 app.use(express.static(path.join(__dirname, "client")));
 app.use("/recordings", express.static(path.join(__dirname, "../recordings")));
 app.use(express.json());
 
-// API Routes
+// Routes
 app.get("/api/conversations", (req, res) => {
-  const conversations = recordingService.getConversations();
-  res.json(conversations);
+  res.json(recordingService.getConversations());
 });
 
 app.get("/api/conversations/:id", (req, res) => {
   const conversation = recordingService.getConversation(req.params.id);
-  if (conversation) {
-    res.json(conversation);
-  } else {
-    res.status(404).json({ error: "Conversation not found" });
-  }
+  conversation ? res.json(conversation) : res.status(404).send("Not found");
 });
-
-// Track users and AI agent
-const users = new Map();
-const AI_AGENT_ID = "ai-assistant";
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  users.set(socket.id, { id: socket.id, type: "user" });
-
-  // Send updated user list (including AI agent)
-  const userList = [
-    { id: AI_AGENT_ID, name: "🤖 AI Ассистент", type: "ai" },
-    ...Array.from(users.values()).filter((u) => u.id !== socket.id),
-  ];
-  socket.emit("users", userList);
-
-  // Broadcast to others
-  socket.broadcast.emit("user-joined", { id: socket.id });
-
-  // Handle call to AI
   socket.on("call-ai", async (data = {}) => {
     const sessionId = uuidv4();
     socket.sessionId = sessionId;
-
-    // Get IP address from socket
-    const clientIp =
-      socket.handshake.headers["x-forwarded-for"] ||
-      socket.handshake.address ||
-      socket.request.connection.remoteAddress;
-
-    // Caller metadata
-    const callerInfo = {
-      ip: clientIp,
-      deviceInfo: data.deviceInfo || null,
-      location: data.location || null,
-      connectionTime: new Date().toISOString(),
-    };
-
-    // Start recording session with caller info
-    recordingService.startSession(sessionId, callerInfo);
+    
+    // Start session logic...
+    recordingService.startSession(sessionId, {
+        ip: socket.handshake.address,
+        deviceInfo: data.deviceInfo
+    });
 
     socket.emit("ai-call-started", { sessionId });
-    console.log(`AI call started: ${sessionId}`);
-    console.log(`  IP: ${clientIp}`);
-    if (data.location && data.location.latitude) {
-      console.log(
-        `  Location: ${data.location.latitude}, ${data.location.longitude}`
-      );
-    }
+    console.log(`AI Call Started: ${sessionId}`);
   });
 
-  // Handle audio from user
   socket.on("audio-chunk", async (data) => {
+    // ВАЖНО: Деструктурируем именно audioData
     const { audioData, sessionId } = data;
 
-    if (!audioData || !sessionId) {
-      socket.emit("ai-error", { error: "Missing audio data or session" });
+    if (!audioData) {
+      console.error("Received audio-chunk but audioData is missing!");
+      socket.emit("ai-error", { error: "No audio data received" });
       return;
     }
 
     try {
-      // Convert base64 to buffer
+      // Decode Base64 to Buffer
       const audioBuffer = Buffer.from(audioData, "base64");
 
-      // Save user audio
+      // Save chunk
       recordingService.addAudioChunk(sessionId, audioBuffer, "user");
 
-      // Process through AI pipeline
-      socket.emit("ai-processing", { status: "Обрабатываю ваш голос..." });
+      socket.emit("ai-processing", { status: "Обработка..." });
 
+      // Process AI
       const result = await aiService.processAudio(audioBuffer, sessionId);
 
-      // Save messages to transcript
+      // Save messages and incident
       recordingService.addMessage(sessionId, "user", result.text);
       recordingService.addMessage(sessionId, "ai", result.response);
-
-      // Save AI audio response
       recordingService.addAudioChunk(sessionId, result.audio, "ai");
-
-      // Save/update CAD data
       recordingService.updateIncidentData(sessionId, result.incident);
 
-      // Send response audio back with incident analysis
+      // Respond
       socket.emit("ai-response", {
         text: result.text,
         response: result.response,
-        audio: result.audio.toString("base64"),
+        audio: result.audio.toString("base64"), // Send back as Base64
         incident: result.incident,
       });
+
     } catch (error) {
-      console.error("Error processing audio:", error);
-      socket.emit("ai-error", {
-        error: "Ошибка обработки. Попробуйте снова.",
-        details: error.message,
-      });
+      console.error("Processing error:", error);
+      socket.emit("ai-error", { error: "Processing failed", details: error.message });
     }
   });
 
-  // End AI call
   socket.on("end-ai-call", async ({ sessionId }) => {
     if (sessionId) {
-      const result = await recordingService.endSession(sessionId);
+      const res = await recordingService.endSession(sessionId);
       aiService.clearHistory(sessionId);
-
-      socket.emit("ai-call-ended", {
-        sessionId,
-        duration: result?.duration || 0,
-        messageCount: result?.messageCount || 0,
-      });
-
-      console.log(`AI call ended: ${sessionId}`);
+      socket.emit("ai-call-ended", { duration: res?.duration || 0, messageCount: res?.messageCount || 0 });
+      console.log(`Call Ended: ${sessionId}`);
     }
-  });
-
-  // P2P calling between users (existing functionality)
-  socket.on("call-user", ({ to, offer }) => {
-    io.to(to).emit("incoming-call", {
-      from: socket.id,
-      offer,
-    });
-  });
-
-  socket.on("answer-call", ({ to, answer }) => {
-    io.to(to).emit("call-accepted", {
-      from: socket.id,
-      answer,
-    });
-  });
-
-  socket.on("ice-candidate", ({ to, candidate }) => {
-    io.to(to).emit("ice-candidate", {
-      from: socket.id,
-      candidate,
-    });
-  });
-
-  socket.on("end-call", ({ to }) => {
-    io.to(to).emit("end-call", {
-      from: socket.id,
-    });
   });
 
   socket.on("disconnect", () => {
-    users.delete(socket.id);
-    io.emit("user-left", { id: socket.id });
-    console.log("Disconnected:", socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📁 Recordings will be saved to ./recordings`);
-  console.log(`💬 Transcripts will be saved to ./conversations`);
 });

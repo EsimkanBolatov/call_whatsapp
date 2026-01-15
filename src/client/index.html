@@ -3,23 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Экстренный вызов 102</title>
+    <title>NG911 Co-Pilot | Диспетчер экстренных служб</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --primary: #3b82f6;
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --success: #10b981;
         --danger: #ef4444;
-        --bg: #0f172a;
-        --text: #f1f5f9;
-        --gray: #1e293b;
+        --warning: #f59e0b;
+        --bg-dark: #0f172a;
+        --bg-card: #1e293b;
+        --bg-card-hover: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
         --border: #334155;
-        --card-bg: #1e293b;
-        --hover: #334155;
+        --glow: rgba(99, 102, 241, 0.4);
       }
 
       * {
@@ -30,158 +35,466 @@
 
       body {
         font-family: "Inter", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        height: 100vh;
+        background: var(--bg-dark);
+        color: var(--text-primary);
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 1rem;
+        padding: 2rem;
       }
 
       .container {
-        max-width: 400px;
+        max-width: 600px;
         width: 100%;
-        text-align: center;
       }
 
-      .header {
+      header {
+        text-align: center;
         margin-bottom: 2rem;
       }
 
-      .header h1 {
-        font-size: 1.5rem;
+      h1 {
+        font-size: 2rem;
         font-weight: 700;
-        color: var(--text);
+        background: linear-gradient(
+          135deg,
+          var(--primary-light),
+          var(--primary)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin-bottom: 0.5rem;
       }
 
-      .header p {
-        color: #6c757d;
-        font-size: 0.9rem;
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
       }
 
-      .call-section {
-        background: var(--gray);
+      .card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 3rem 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 30px var(--glow);
+      }
+
+      .card-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .ai-caller {
         display: flex;
         flex-direction: column;
         align-items: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        gap: 1.5rem;
       }
 
-      .status-text {
-        margin-bottom: 2rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        min-height: 1.5rem;
-        color: #6c757d;
-      }
-
-      #status.listening {
-        color: var(--primary);
-        font-weight: bold;
-        animation: pulse 1.5s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          opacity: 0.6;
-        }
-        50% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0.6;
-        }
-      }
-
-      .btn-main {
+      .ai-avatar {
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        border: none;
-        background-color: var(--primary);
-        color: white;
-        font-size: 1.2rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 5px;
-        box-shadow: 0 4px 15px rgba(0, 86, 179, 0.3);
-      }
-
-      .btn-main:active {
-        transform: scale(0.95);
-      }
-
-      .btn-main span {
-        font-size: 2rem;
-      }
-
-      /* Red state for active call (Hangup) */
-      .btn-main.active {
-        background-color: var(--danger);
-        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-      }
-
-      .btn-main:disabled {
-        opacity: 0.7;
-        cursor: wait;
-      }
-
-      /* Hidden elements to keep JS working */
-      .hidden {
-        display: none !important;
-      }
-
-      #aiAvatar {
-        transition: all 0.3s;
-        margin-bottom: 20px;
         font-size: 3rem;
+        position: relative;
+        animation: pulse-ring 2s infinite;
+        cursor: pointer;
+        transition: transform 0.2s;
       }
+
+      .ai-avatar:hover {
+        transform: scale(1.05);
+      }
+
+      .ai-avatar.active {
+        animation: active-pulse 1.5s infinite;
+      }
+
+      .ai-avatar.listening {
+        animation: listening-pulse 0.5s infinite;
+        background: linear-gradient(135deg, var(--success), #059669);
+      }
+
+      .ai-avatar.processing {
+        animation: processing-spin 2s linear infinite;
+        background: linear-gradient(135deg, var(--warning), #d97706);
+      }
+
+      @keyframes pulse-ring {
+        0% { box-shadow: 0 0 0 0 var(--glow); }
+        70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+      }
+
+      @keyframes active-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--glow); }
+        50% { transform: scale(1.05); box-shadow: 0 0 40px var(--glow); }
+      }
+
+      @keyframes listening-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+        50% { transform: scale(1.08); box-shadow: 0 0 50px rgba(16, 185, 129, 0.8); }
+      }
+
+      @keyframes processing-spin {
+        0% { box-shadow: 0 0 20px var(--warning); }
+        50% { box-shadow: 0 0 40px var(--warning); }
+        100% { box-shadow: 0 0 20px var(--warning); }
+      }
+
+      .status {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-align: center;
+        min-height: 1.5em;
+      }
+
+      .status.active { color: var(--success); }
+      .status.processing { color: var(--warning); }
+      .status.listening { color: var(--success); font-weight: 600; }
+
+      .btn-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 0.875rem 1.75rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--bg-card-hover);
+        color: var(--text-secondary);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--glow);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, var(--danger), #dc2626);
+        color: white;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+      }
+
+      .transcript {
+        max-height: 300px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding-right: 5px;
+      }
+
+      .message {
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        max-width: 85%;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .message.user {
+        background: var(--primary);
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+        color: white;
+      }
+
+      .message.ai {
+        background: var(--bg-card-hover);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        color: var(--text-primary);
+      }
+
+      .message-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.7;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .message-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+
+      .empty-transcript {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 2rem;
+        font-style: italic;
+      }
+
+      /* Incident Card Styles */
+      .incident-card {
+        background: var(--bg-card-hover);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary);
+      }
+
+      .incident-card.critical { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+      .incident-card.high { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+      .incident-card.medium { border-left-color: #eab308; background: rgba(234, 179, 8, 0.1); }
+      .incident-card.low { border-left-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+
+      .incident-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .incident-priority {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .incident-category {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+      }
+
+      .incident-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .incident-detail {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .incident-detail-label {
+        color: var(--text-secondary);
+        min-width: 60px;
+      }
+
+      .incident-detail-value {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      .incident-clarification {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        color: var(--warning);
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .emotion-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+      }
+
+      .volume-meter {
+        width: 100%;
+        max-width: 200px;
+        height: 6px;
+        background: var(--bg-card-hover);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+      }
+
+      .volume-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success), var(--warning));
+        width: 0%;
+        transition: width 0.05s;
+        border-radius: 4px;
+      }
+
+      .instructions {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px dashed var(--primary);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+
+      .instructions h4 {
+        color: var(--primary-light);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .instructions ol {
+        padding-left: 1.25rem;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      audio { display: none; }
+
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--bg-card-hover);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .history-item:hover { background: var(--border); }
+      .history-time { font-size: 0.85rem; color: var(--text-secondary); }
+      .history-duration { font-size: 0.8rem; color: var(--primary-light); }
+      
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: var(--bg-dark); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
     </style>
   </head>
   <body>
     <div class="container">
-      <header class="header">
-        <h1>Экстренная служба</h1>
-        <p>Нажмите кнопку для связи</p>
+      <header>
+        <h1>🚨 NG911 Co-Pilot</h1>
+        <p class="subtitle">
+          Интеллектуальный помощник диспетчера экстренных служб
+        </p>
       </header>
 
-      <div class="call-section">
-        <div id="aiAvatar">🚨</div>
-        <div class="status-text" id="status">Готов к работе</div>
+      <div class="card">
+        <div class="card-title"><span>📞</span> Голосовой звонок</div>
+        <div class="ai-caller">
+          <div class="ai-avatar" id="aiAvatar">🚨</div>
+          <div class="status" id="status">Нажмите кнопку для звонка</div>
+          <div class="volume-meter" id="volumeMeter" style="opacity: 0">
+            <div class="volume-bar" id="volumeBar"></div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="callBtn">
+              <span>🚨</span> Начать сессию
+            </button>
+            <button class="btn btn-danger" id="hangupBtn" disabled>
+              <span>📵</span> Завершить
+            </button>
+          </div>
+        </div>
+        <div class="instructions">
+          <h4>Как пользоваться:</h4>
+          <ol>
+            <li>Нажмите "Начать сессию" для подключения</li>
+            <li>Говорите — система автоматически распознает речь</li>
+            <li>AI проанализирует и выдаст рекомендации</li>
+            <li>Нажмите "Завершить" для окончания</li>
+          </ol>
+        </div>
+      </div>
 
-        <!-- Single toggle button for UI simplicity -->
-        <button class="btn-main" id="toggleCheck"><span>📞</span> Вызов</button>
+      <div class="card">
+        <div class="card-title"><span>💬</span> Транскрипция разговора</div>
+        <div class="transcript" id="transcript">
+          <div class="empty-transcript">
+            Начните разговор, чтобы увидеть транскрипцию
+          </div>
+        </div>
+      </div>
 
-        <!-- Hidden real controls -->
-        <div class="hidden">
-          <button id="callBtn">Call</button>
-          <button id="hangupBtn">Hangup</button>
-          <div id="transcript"></div>
-          <div id="historyList"></div>
-          <div id="volumeMeter"><div id="volumeBar"></div></div>
-          <div id="cadCard"><div id="incidentPanel"></div></div>
+      <div class="card" id="cadCard" style="display: none">
+        <div class="card-title"><span>📋</span> Карточка инцидента (CAD)</div>
+        <div id="incidentPanel">
+          </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>📚</span> История разговоров</div>
+        <div class="history-list" id="historyList">
+          <div class="empty-transcript">Загрузка истории...</div>
         </div>
       </div>
     </div>
 
     <audio id="aiAudio"></audio>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
       const socket = io();
 
-      // Original DOM Elements (Logic preserved)
+      // DOM Elements
       const callBtn = document.getElementById("callBtn");
       const hangupBtn = document.getElementById("hangupBtn");
       const statusEl = document.getElementById("status");
@@ -191,61 +504,37 @@
       const historyList = document.getElementById("historyList");
       const volumeMeter = document.getElementById("volumeMeter");
       const volumeBar = document.getElementById("volumeBar");
-      const incidentPanel = document.getElementById("incidentPanel");
-
-      // New UI Element
-      const toggleCheck = document.getElementById("toggleCheck");
-
-      // UI Logic Binding
-      toggleCheck.onclick = () => {
-        if (!isListening && !isRecording) {
-          // Start Call
-          callBtn.click();
-        } else {
-          // End Call
-          hangupBtn.click();
-        }
-      };
 
       // State
       let sessionId = null;
       let audioContext = null;
       let mediaStream = null;
       let analyser = null;
-      let processor = null;
+      let processor = null; // AudioWorkletNode
       let audioChunks = [];
 
       // Voice Activity Detection settings
-      const VAD_THRESHOLD = 0.04;
-      const SILENCE_DURATION = 700;
-      const MIN_SPEECH_DURATION = 400;
+      const VAD_THRESHOLD = 0.04; 
+      const SILENCE_DURATION = 1000; 
+      const MIN_SPEECH_DURATION = 500;
       const NOISE_FLOOR_SAMPLES = 30;
 
       let noiseFloor = 0.02;
       let noiseFloorSamples = [];
       let consecutiveSpeechFrames = 0;
       const SPEECH_CONFIRM_FRAMES = 3;
-      const MAX_SPEECH_DURATION = 10000; // 10 seconds maximum recording
 
       let isListening = false;
       let isRecording = false;
       let isSpeaking = false;
       let isProcessing = false;
       let silenceTimer = null;
-      let maxDurationTimer = null;
       let speechStartTime = null;
       let isAiSpeaking = false;
 
-      // Connect to server
       socket.on("connect", () => {
         console.log("Connected to server");
-        statusEl.innerText = "Готов к вызову";
-      });
-
-      socket.on("disconnect", () => {
-        statusEl.innerText = "Нет соединения";
-        toggleCheck.disabled = true;
-        toggleCheck.style.backgroundColor = "#ccc";
+        loadHistory();
       });
 
       // Start call with AI
@@ -258,10 +547,6 @@
               echoCancellation: true,
               noiseSuppression: true,
               autoGainControl: true,
-              googEchoCancellation: true,
-              googAutoGainControl: true,
-              googNoiseSuppression: true,
-              googHighpassFilter: true,
             },
           });
 
@@ -272,13 +557,10 @@
           };
 
           socket.emit("call-ai", { deviceInfo });
-
-          // UI Update
-          toggleCheck.classList.add("active");
-          toggleCheck.innerHTML = "<span>📵</span> Сброс";
-          statusEl.innerText = "Подключение...";
+          callBtn.disabled = true;
+          updateStatus("Подключение...", "processing");
         } catch (err) {
-          statusEl.innerText = "Ошибка микрофона";
+          updateStatus("Ошибка: микрофон недоступен", "");
           console.error("Microphone error:", err);
         }
       };
@@ -286,12 +568,16 @@
       // AI call started
       socket.on("ai-call-started", (data) => {
         sessionId = data.sessionId;
+        callBtn.disabled = true;
+        hangupBtn.disabled = false;
+
+        transcriptEl.innerHTML = "";
         noiseFloorSamples = [];
         noiseFloor = 0.02;
         startListening();
       });
 
-      function startListening() {
+      async function startListening() {
         if (!mediaStream) return;
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -304,70 +590,34 @@
         analyser.smoothingTimeConstant = 0.3;
         source.connect(analyser);
 
-        // Load AudioWorklet processor
-        audioContext.audioWorklet.addModule('audio-processor.js').then(() => {
-          console.log('[Main] AudioWorklet module loaded successfully');
-          // Create AudioWorkletNode for recording
-          processor = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
-          console.log('[Main] AudioWorkletNode created');
+        // Load AudioWorklet
+        try {
+            await audioContext.audioWorklet.addModule('audio-processor.js');
+            processor = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
+            
+            processor.port.onmessage = (event) => {
+                if (event.data.type === 'audioChunk' && isRecording) {
+                    audioChunks.push(new Float32Array(event.data.chunk));
+                } else if (event.data.type === 'audioData' && isRecording) {
+                    // Final dump if needed
+                    event.data.chunks.forEach(c => audioChunks.push(new Float32Array(c)));
+                }
+            };
 
-          // Handle messages from AudioWorklet
-          processor.port.onmessage = (event) => {
-            if (event.data.type === 'audioChunk' && isRecording) {
-              // Add chunk to our audioChunks array for sending to server
-              audioChunks.push(new Float32Array(event.data.chunk));
-            } else if (event.data.type === 'audioData' && isRecording) {
-              // Fallback: add all chunks at once (for stop recording)
-              event.data.chunks.forEach(chunk => {
-                audioChunks.push(new Float32Array(chunk));
-              });
-            }
-          };
+            source.connect(processor);
+            processor.connect(audioContext.destination);
 
-          source.connect(processor);
-          processor.connect(audioContext.destination);
+            isListening = true;
+            volumeMeter.style.opacity = "1";
+            updateStatus("🎙️ Слушаю...", "listening");
+            aiAvatar.classList.add("active");
 
-          isListening = true;
-          statusEl.innerText = "Слушаю...";
-          statusEl.classList.add("listening");
-          aiAvatar.innerText = "👂";
+            detectVoiceActivity();
 
-          setTimeout(() => {
-            statusEl.innerText = "Говорите...";
-          }, 1000);
-
-          detectVoiceActivity();
-        }).catch(error => {
-          console.error('[Main] Failed to load AudioWorklet:', error);
-          // Fallback to old method if AudioWorklet fails
-          fallbackToScriptProcessor(source, analyser);
-        });
-      }
-
-      // Fallback function for older browsers or if AudioWorklet fails
-      function fallbackToScriptProcessor(source, analyser) {
-        console.log('[Main] Using fallback ScriptProcessorNode');
-        // Processor for recording
-        processor = audioContext.createScriptProcessor(2048, 1, 1);
-        processor.onaudioprocess = (e) => {
-          if (isRecording) {
-            const inputData = e.inputBuffer.getChannelData(0);
-            audioChunks.push(new Float32Array(inputData));
-          }
-        };
-        source.connect(processor);
-        processor.connect(audioContext.destination);
-
-        isListening = true;
-        statusEl.innerText = "Слушаю...";
-        statusEl.classList.add("listening");
-        aiAvatar.innerText = "👂";
-
-        setTimeout(() => {
-          statusEl.innerText = "Говорите...";
-        }, 1000);
-
-        detectVoiceActivity();
+        } catch (e) {
+            console.error("AudioWorklet error:", e);
+            updateStatus("Ошибка AudioWorklet", "");
+        }
       }
 
       function detectVoiceActivity() {
@@ -386,21 +636,23 @@
         speechEnergy /= highBin - lowBin + 1;
         const volume = speechEnergy / 255;
 
-        // Adaptive noise floor
+        // Adaptive Noise Floor
         if (!isRecording && !isAiSpeaking) {
           noiseFloorSamples.push(volume);
-          if (noiseFloorSamples.length > NOISE_FLOOR_SAMPLES) {
-            noiseFloorSamples.shift();
-          }
+          if (noiseFloorSamples.length > NOISE_FLOOR_SAMPLES) noiseFloorSamples.shift();
           const sorted = [...noiseFloorSamples].sort((a, b) => a - b);
           const lowerHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
           if (lowerHalf.length > 0) {
-            noiseFloor =
-              lowerHalf.reduce((a, b) => a + b, 0) / lowerHalf.length + 0.015;
+            noiseFloor = lowerHalf.reduce((a, b) => a + b, 0) / lowerHalf.length + 0.015;
           }
         }
 
         const dynamicThreshold = Math.max(VAD_THRESHOLD, noiseFloor * 1.8);
+        
+        // Update Meter
+        const meterValue = Math.min((volume / dynamicThreshold) * 50, 100);
+        volumeBar.style.width = `${meterValue}%`;
+        volumeBar.style.background = volume > dynamicThreshold ? "var(--success)" : "var(--text-secondary)";
 
         if (isAiSpeaking || isProcessing) {
           consecutiveSpeechFrames = 0;
@@ -421,10 +673,8 @@
           clearTimeout(silenceTimer);
           silenceTimer = null;
           isSpeaking = true;
-          statusEl.innerText = "Запись...";
         } else if (!isCurrentlySpeaking && isRecording && isSpeaking) {
           if (!silenceTimer) {
-            statusEl.innerText = "Тишина...";
             silenceTimer = setTimeout(() => {
               const duration = Date.now() - speechStartTime;
               if (duration >= MIN_SPEECH_DURATION) {
@@ -434,7 +684,10 @@
                 isRecording = false;
                 isSpeaking = false;
                 consecutiveSpeechFrames = 0;
-                statusEl.innerText = "Слушаю...";
+                if(processor) processor.port.postMessage({ type: 'stopRecording' }); // Reset worklet
+                updateStatus("🎙️ Слушаю...", "listening");
+                aiAvatar.classList.add("active");
+                aiAvatar.classList.remove("listening");
               }
             }, SILENCE_DURATION);
           }
@@ -448,122 +701,218 @@
         isRecording = true;
         isSpeaking = true;
         speechStartTime = Date.now();
-        console.log("Started recording");
+        
+        if (processor) processor.port.postMessage({ type: 'startRecording' });
 
-        // Send message to AudioWorklet to start recording
-        if (processor && processor.port) {
-          processor.port.postMessage({ type: 'startRecording' });
-        }
-
-        // Set maximum recording duration timer
-        maxDurationTimer = setTimeout(() => {
-          console.log("Maximum recording duration reached");
-          stopRecordingAndSend();
-        }, MAX_SPEECH_DURATION);
-
-        // Visual feedback
-        aiAvatar.innerText = "🎤";
+        updateStatus("🔴 Запись...", "listening");
+        aiAvatar.classList.add("listening");
+        aiAvatar.classList.remove("active");
       }
 
-      function stopRecordingAndSend() {
+      async function stopRecordingAndSend() {
         isRecording = false;
         isSpeaking = false;
         isProcessing = true;
-        consecutiveSpeechFrames = 0;
         clearTimeout(silenceTimer);
-        silenceTimer = null;
-        clearTimeout(maxDurationTimer);
-        maxDurationTimer = null;
+        
+        if (processor) processor.port.postMessage({ type: 'stopRecording' });
 
-        // Send message to AudioWorklet to stop recording
-        if (processor && processor.port) {
-          processor.port.postMessage({ type: 'stopRecording' });
+        updateStatus("⏳ Обработка...", "processing");
+        aiAvatar.classList.remove("listening");
+        aiAvatar.classList.add("processing");
+
+        // Convert chunks to WAV buffer
+        let totalLength = 0;
+        for (let chunk of audioChunks) totalLength += chunk.length;
+        
+        const audioBuffer = audioContext.createBuffer(1, totalLength, audioContext.sampleRate);
+        const channelData = audioBuffer.getChannelData(0);
+        let offset = 0;
+        for (let chunk of audioChunks) {
+            channelData.set(chunk, offset);
+            offset += chunk.length;
         }
 
-        statusEl.innerText = "Обработка...";
-        statusEl.classList.remove("listening");
-        aiAvatar.innerText = "🧠";
+        // WAV Encoding
+        const wavBlob = audioBufferToWav(audioBuffer);
+        const base64 = await blobToBase64(wavBlob);
 
-        const audioBlob = exportAudio();
+        // SEND CORRECT FORMAT
         socket.emit("audio-chunk", {
-          sessionId: sessionId,
-          audio: audioBlob,
+            audioData: base64, // Correct key expected by server
+            sessionId: sessionId
+        });
+        
+        audioChunks = [];
+      }
+
+      // Utils
+      function audioBufferToWav(buffer) {
+        const numChannels = 1;
+        const sampleRate = buffer.sampleRate;
+        const format = 1; // PCM
+        const bitDepth = 16;
+        
+        const bytesPerSample = bitDepth / 8;
+        const blockAlign = numChannels * bytesPerSample;
+        
+        const samples = buffer.getChannelData(0);
+        const dataLength = samples.length * bytesPerSample;
+        const bufferLen = 44 + dataLength;
+        const arrayBuffer = new ArrayBuffer(bufferLen);
+        const view = new DataView(arrayBuffer);
+
+        const writeString = (view, offset, string) => {
+            for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+        };
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataLength, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, format, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * blockAlign, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitDepth, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataLength, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            offset += 2;
+        }
+
+        return new Blob([arrayBuffer], { type: 'audio/wav' });
+      }
+
+      function blobToBase64(blob) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(blob);
         });
       }
 
-      function exportAudio() {
-        // Flatten chunks
-        let totalLength = 0;
-        for (let chunk of audioChunks) totalLength += chunk.length;
-        const result = new Float32Array(totalLength);
-        let offset = 0;
-        for (let chunk of audioChunks) {
-          result.set(chunk, offset);
-          offset += chunk.length;
-        }
-        return result;
-      }
-
-      // Handle AI Audio Response
-      socket.on("ai-audio_response", (data) => {
+      // Server Responses
+      socket.on("ai-response", (data) => {
         isProcessing = false;
-        statusEl.innerText = "Говорит диспетчер...";
-        aiAvatar.innerText = "🗣️";
+        aiAvatar.classList.remove("processing");
+        aiAvatar.classList.add("active");
 
-        const audioBlob = new Blob([data.audio], { type: "audio/mpeg" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        aiAudio.src = audioUrl;
+        addMessage("user", data.text, data.incident);
+        addMessage("ai", data.response);
+
+        if (data.incident) updateIncidentCard(data.incident);
+
         isAiSpeaking = true;
+        const audioBlob = base64ToBlob(data.audio, "audio/mp3");
+        const url = URL.createObjectURL(audioBlob);
+        aiAudio.src = url;
+        aiAudio.play();
+        updateStatus("🔊 Говорит диспетчер...", "active");
 
         aiAudio.onended = () => {
-          isAiSpeaking = false;
-          statusEl.innerText = "Слушаю...";
-          statusEl.classList.add("listening");
-          aiAvatar.innerText = "👂";
-          URL.revokeObjectURL(audioUrl);
+            isAiSpeaking = false;
+            if(isListening) updateStatus("🎙️ Слушаю...", "listening");
         };
-
-        aiAudio.play().catch((e) => console.error("Audio play error", e));
       });
 
-      // Update transcript (Empty handler for minimalist mode, or log to console)
-      socket.on("transcription", (data) => {
-        console.log("Transcription:", data);
-        // No UI update needed
+      socket.on("ai-error", (data) => {
+        isProcessing = false;
+        aiAvatar.classList.remove("processing");
+        aiAvatar.classList.add("active");
+        updateStatus("❌ Ошибка AI", "");
+        console.error(data);
       });
 
-      socket.on("incident-update", (data) => {
-        console.log("Incident Update:", data);
-      });
-
-      // Hangup
+      // Cleanup
       hangupBtn.onclick = () => {
-        stopCall();
-      };
-
-      function stopCall() {
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop());
-          mediaStream = null;
-        }
-        if (audioContext) {
-          audioContext.close();
-          audioContext = null;
-        }
+        if(processor) { processor.disconnect(); processor = null; }
+        if(audioContext) { audioContext.close(); audioContext = null; }
+        if(mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+        
         isListening = false;
         isRecording = false;
+        socket.emit("end-ai-call", { sessionId });
+      };
 
-        // UI Reset
-        toggleCheck.classList.remove("active");
-        toggleCheck.innerHTML = "<span>📞</span> Вызов";
-        toggleCheck.style.backgroundColor = ""; // Reset to default
-        statusEl.innerText = "Вызов завершен";
-        statusEl.classList.remove("listening");
-        aiAvatar.innerText = "🚨";
+      socket.on("ai-call-ended", () => {
+        sessionId = null;
+        callBtn.disabled = false;
+        hangupBtn.disabled = true;
+        volumeMeter.style.opacity = "0";
+        aiAvatar.classList.remove("active", "listening", "processing");
+        updateStatus("Разговор завершен", "");
+        loadHistory();
+      });
 
-        setTimeout(() => {
-          statusEl.innerText = "Нажмите кнопку для связи";
-        }, 2000);
+      // UI Helpers
+      function updateStatus(text, cls) {
+        statusEl.innerText = text;
+        statusEl.className = `status ${cls}`;
+      }
+
+      function base64ToBlob(base64, type) {
+        const binary = atob(base64);
+        const len = binary.length;
+        const buffer = new Uint8Array(len);
+        for (let i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+        return new Blob([buffer], { type });
+      }
+
+      function addMessage(type, text, incident) {
+        const div = document.createElement("div");
+        div.className = `message ${type}`;
+        
+        let header = type === 'user' ? 'Заявитель' : 'Co-Pilot';
+        if(incident && type === 'user') {
+             header += ` <span class="emotion-badge">${incident.emotionEmoji || ''} ${incident.emotion || ''}</span>`;
+        }
+
+        div.innerHTML = `<div class="message-label">${header}</div><div class="message-text">${text}</div>`;
+        transcriptEl.appendChild(div);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+
+      function updateIncidentCard(incident) {
+        document.getElementById("cadCard").style.display = "block";
+        const panel = document.getElementById("incidentPanel");
+        
+        const details = [];
+        if(incident.address) details.push(`📍 ${incident.address}`);
+        if(incident.weapons) details.push(`🔫 ${incident.weapons}`);
+        if(incident.victims) details.push(`🩹 ${incident.victims}`);
+        
+        panel.innerHTML = `
+            <div class="incident-card ${incident.priority || 'medium'}">
+                <div class="incident-header">
+                    <div class="incident-priority">${incident.priorityEmoji || ''} ${incident.priority?.toUpperCase()}</div>
+                    <div class="incident-category">${incident.categoryRu || 'Н/Д'}</div>
+                </div>
+                <div class="incident-details">
+                    ${details.map(d => `<div>${d}</div>`).join('')}
+                </div>
+                 ${incident.needsClarification?.length ? `<div class="incident-clarification">💡 Уточнить: ${incident.needsClarification.join(', ')}</div>` : ''}
+            </div>
+        `;
+      }
+
+      async function loadHistory() {
+        try {
+            const res = await fetch("/api/conversations");
+            const data = await res.json();
+            historyList.innerHTML = data.slice(0, 5).map(c => `
+                <div class="history-item">
+                    <span>${new Date(c.startTime).toLocaleTimeString()}</span>
+                    <span>${c.duration}с</span>
+                </div>
+            `).join('');
+        } catch(e) {}
       }
     </script>
   </body>
