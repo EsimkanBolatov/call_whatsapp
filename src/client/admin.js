@@ -41,26 +41,43 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Логика кнопки сохранения в ЕРДР
-  saveErdrBtn.addEventListener("click", () => {
+  saveErdrBtn.addEventListener("click", async () => {
     if (!selectedId) return;
     
-    // Имитация отправки данных
-    const btnText = saveErdrBtn.innerHTML;
-    saveErdrBtn.innerHTML = "⏳ Отправка...";
+    const originalText = saveErdrBtn.innerHTML;
+    saveErdrBtn.innerHTML = "⏳ Отправка (Аудио+JSON)...";
     saveErdrBtn.disabled = true;
 
-    // В реальном проекте здесь будет fetch('/api/erdr/save', { method: 'POST', body: ... })
+    try {
+        // Вызываем НАШ сервер Node.js, который сам свяжется с Python ERDR
+        const response = await fetch(`/api/erdr/send/${selectedId}`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`✅ УСПЕХ!\nКУИ: ${result.kui}\nID в базе ЕРДР: ${result.erdrId}`);
+            saveErdrBtn.innerHTML = "✅ Сохранено в ЕРДР";
+            saveErdrBtn.style.backgroundColor = "var(--success)";
+        } else {
+            throw new Error(result.details || result.error || "Ошибка сервера");
+        }
+    } catch (error) {
+        console.error("ERDR Send error:", error);
+        alert(`❌ ОШИБКА ОТПРАВКИ:\n${error.message}`);
+        saveErdrBtn.innerHTML = "❌ Ошибка";
+        saveErdrBtn.style.backgroundColor = "var(--danger)";
+    }
+
+    // Возврат кнопки в исходное состояние
     setTimeout(() => {
-        alert(`Инцидент ${selectedId} успешно передан в ЕРДР!`);
-        saveErdrBtn.innerHTML = "✅ Сохранено";
-        saveErdrBtn.style.backgroundColor = "var(--success)";
-        
-        setTimeout(() => {
-            saveErdrBtn.innerHTML = btnText;
-            saveErdrBtn.disabled = false;
-            saveErdrBtn.style.backgroundColor = ""; // Reset
-        }, 3000);
-    }, 1000);
+        if (!saveErdrBtn.innerHTML.includes("✅")) {
+             saveErdrBtn.innerHTML = originalText;
+             saveErdrBtn.style.backgroundColor = "";
+        }
+        saveErdrBtn.disabled = false;
+    }, 4000);
   });
 
   // --- Функции ---
