@@ -257,8 +257,7 @@ class AIService {
 
   /**
    * Анализ инцидента (Smart-Triage & CAD)
-   * @param {string} text - Текст заявителя
-   * @returns {Promise<object>} Анализ в формате JSON
+   * ОБНОВЛЕНО ДЛЯ ИНТЕГРАЦИИ С ЕРДР (PROJECT 2)
    */
   async analyzeIncident(text) {
     console.log(
@@ -270,9 +269,10 @@ class AIService {
         messages: [
           {
             role: "system",
-            content: `Ты анализатор экстренных вызовов для полиции Казахстана. Проанализируй текст заявителя и верни ТОЛЬКО JSON.
-            Твоя задача — не только классифицировать, но и подготовить данные для официальной регистрации в ЕРДР (Единый реестр досудебных расследований).
+            content: `Ты аналитик экстренных вызовов для полиции Казахстана.
+Твоя задача — извлечь данные и вернуть ТОЛЬКО JSON для регистрации в ЕРДР (Единый реестр досудебных расследований).
 
+Структура JSON:
 {
   "priority": "critical|high|medium|low",
   "priorityEmoji": "🔴|🟠|🟡|🟢",
@@ -284,33 +284,23 @@ class AIService {
   "emotionEmoji": "😱|😡|😨|😰|😐",
   "threatLevel": "высокая|средняя|низкая|нет",
   "address": "полный адрес происшествия или null",
-  "weapons": "описание оружия или null",
-  "victims": "число пострадавших или null",
-  "suspects": "описание подозреваемых или null",
-  "vehicles": "описание ТС или null",
-  "callerName": "имя фамилия заявителя или null",
-  "needsClarification": ["что нужно уточнить"],
+  "callerName": "Фамилия Имя заявителя или null",
+  "needsClarification": ["список вопросов"],
 
-  "erdr_category": "Квалификация для ЕРДР (Поле 5.1). Например: 'против собственности', 'против личности', 'мошенничество'",
-  "erdr_recipient": "Для кого обращение? (Поле 5.2). Обычно: 'Начальнику УП района...'",
-  "erdr_district": "Район города (если можно определить из адреса). Например: 'Алмалинский район'",
-  "erdr_description": "Официальная фабула происшествия для ЕРДР. Кратко, сухо, по факту (3-4 предложения). Пример: '13.01.2026 в 18:30 неизвестное лицо тайно похитило кошелек...'"
+  // --- ПОЛЯ ДЛЯ ЕРДР ---
+  "erdr_district": "Строго одно из: 'Заводской район', 'Алматинский район', 'ДП Жамбылской области'. Правила: Астана/Алматы -> Алматинский район. Тараз/Заводы -> Заводской район. Область/Трасса -> ДП Жамбылской области.",
+  "erdr_event_description": "Сухая юридическая фабула (3-4 предложения). Пример: '15.01.2026 гр. Иванова сообщила о краже кошелька...'",
+  "field_5_1": "Классификатор: 'против собственности', 'против личности', 'прочие', 'общественная безопасность'.",
+  "field_5_6": "Интернет-мошенничество? Строго 'Да' или 'Нет'.",
+  "military_unit": "Номер воинской части если есть (иначе пустая строка)"
 }
 
-Логика распределения служб (dispatchTo):
-- Насилие, оружие, криминал, ДТП без жертв -> police
-- Ранение, болезнь, ДТП с жертвами -> ambulance
-- Пожар, задымление, спасение -> mchs
-- Запах газа, взрыв -> gas
-- Шум, соседи, семейные соры (без оружия) -> district
-- Вопросы, консультация -> info
-
-Если данных нет - ставь null. Всегда возвращай валидный JSON.`,
+Если данных нет - используй null или дефолтные значения ("Нет", "прочие"). Всегда возвращай валидный JSON.`,
           },
           { role: "user", content: text },
         ],
-        max_tokens: 300,
-        temperature: 0.2,
+        max_tokens: 400,
+        temperature: 0.1, // Низкая температура для точности данных
       });
 
       const responseText = completion.choices[0].message.content.trim();
@@ -328,38 +318,24 @@ class AIService {
       // Fallback
       return {
         priority: "medium",
-        priorityEmoji: "🟡",
-        category: "другое",
-        categoryRu: "Другое",
-        emotion: "спокойствие",
-        emotionEmoji: "😐",
-        threatLevel: "нет",
-        address: null,
-        weapons: null,
-        victims: null,
-        suspects: null,
-        vehicles: null,
-        callerName: null,
-        needsClarification: ["Уточните суть обращения"],
+        categoryRu: "Не определено",
+        dispatchToRu: "Инфо",
+        needsClarification: [],
+        erdr_district: "Заводской район",
+        field_5_1: "прочие",
+        field_5_6: "Нет",
+        erdr_event_description: "Автоматическая регистрация (ошибка анализа)"
       };
     } catch (error) {
       console.error("Incident analysis error:", error);
-      // Возвращаем пустую структуру при ошибке API
       return {
         priority: "medium",
-        priorityEmoji: "🟡",
-        category: "другое",
-        categoryRu: "Другое",
-        emotion: "спокойствие",
-        emotionEmoji: "😐",
-        threatLevel: "нет",
-        address: null,
-        weapons: null,
-        victims: null,
-        suspects: null,
-        vehicles: null,
-        callerName: null,
+        categoryRu: "Ошибка",
+        dispatchToRu: "Инфо",
         needsClarification: [],
+        erdr_district: "Заводской район",
+        field_5_1: "прочие",
+        field_5_6: "Нет"
       };
     }
   }
@@ -386,7 +362,7 @@ class AIService {
     const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
 
     for (const [key, value] of Object.entries(newData)) {
-      if (value !== null && value !== undefined) {
+      if (value !== null && value !== undefined && value !== "") {
         // Объединяем списки уточнений
         if (key === "needsClarification" && Array.isArray(value)) {
           merged[key] = [...new Set([...(accumulated[key] || []), ...value])];
@@ -424,17 +400,13 @@ class AIService {
             if (newData.categoryRu) merged.categoryRu = newData.categoryRu;
           }
         }
-        // Имя заявителя не затираем null-ом
-        else if (key === "callerName") {
-          if (value) {
-            merged[key] = value;
-          }
+        // Специальные поля для ЕРДР (просто перезаписываем, если есть значение)
+        else if (["erdr_district", "erdr_event_description", "field_5_1", "field_5_6", "military_unit"].includes(key)) {
+             merged[key] = value;
         }
         // Остальные поля просто обновляем
         else {
-          if (key !== "dispatchToRu" && key !== "categoryRu") {
-            merged[key] = value;
-          }
+          merged[key] = value;
         }
       }
     }
@@ -466,7 +438,7 @@ class AIService {
     console.log(
       `[${sessionId}] 📋 CAD: ${mergedIncident.priorityEmoji || "🟡"} ${
         mergedIncident.categoryRu || "Не определено"
-      } | 😰 ${mergedIncident.emotion || "спокойствие"}`
+      } | ЕРДР Район: ${mergedIncident.erdr_district || "Н/Д"}`
     );
     console.log(`[${sessionId}] 🎙️ Диспетчер: ${dispatcherResponse}`);
 
