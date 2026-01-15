@@ -1,0 +1,11 @@
+{
+  "watch": ["src"],
+  "ext": "js,json,html,css",
+  "ignore": [
+    "recordings/*",
+    "conversations/*",
+    "temp/*",
+    "src/client/*"
+  ],
+  "exec": "node ./src/server.js"
+}
